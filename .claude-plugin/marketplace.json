@@ -1,0 +1,15 @@
+{
+  "name": "gangyi-marketplace",
+  "description": "GANGYIKIM의 개인 Claude 플러그인·스킬 모음",
+  "owner": {
+    "name": "GANGYIKIM",
+    "email": "gangyikim@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "note-kit",
+      "source": "./plugins/note-kit",
+      "description": "아이디어, 초안, 요약 등 문서와 노트 작성을 돕는 스킬 모음"
+    }
+  ]
+}

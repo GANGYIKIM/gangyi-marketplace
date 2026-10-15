@@ -1,0 +1,12 @@
+{
+  "name": "note-kit",
+  "description": "아이디어, 초안, 요약 등 문서와 노트 작성을 돕는 스킬 모음",
+  "author": {
+    "name": "GANGYIKIM",
+    "email": "gangyikim@gmail.com",
+    "url": "https://github.com/GANGYIKIM"
+  },
+  "homepage": "https://github.com/GANGYIKIM/gangyi-marketplace/tree/main/plugins/note-kit",
+  "repository": "https://github.com/GANGYIKIM/gangyi-marketplace",
+  "keywords": ["note", "idea", "writing", "korean"]
+}
