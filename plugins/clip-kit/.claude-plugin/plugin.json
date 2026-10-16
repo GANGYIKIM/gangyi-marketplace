@@ -1,0 +1,13 @@
+{
+  "name": "clip-kit",
+  "description": "웹 링크의 원문을 본문 HTML과 전체 캡처로 저장하고 기록하는 스킬 모음",
+  "author": {
+    "name": "GANGYIKIM",
+    "email": "gangyikim@gmail.com",
+    "url": "https://github.com/GANGYIKIM"
+  },
+  "homepage": "https://github.com/GANGYIKIM/gangyi-marketplace/tree/main/plugins/clip-kit",
+  "repository": "https://github.com/GANGYIKIM/gangyi-marketplace",
+  "keywords": ["clip", "web", "archive", "screenshot", "korean"],
+  "dependencies": ["note-kit"]
+}

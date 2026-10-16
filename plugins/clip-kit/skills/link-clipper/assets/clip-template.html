@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="{lang}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<link rel="canonical" href="{url}">
+<meta property="og:url" content="{url}">
+<meta name="clip:source" content="{url}">
+<meta name="clip:title" content="{title}">
+<meta name="clip:saved" content="{saved}">
+<style>
+  :root { color-scheme: light dark; --fg: #1f2328; --muted: #59636e; --bg: #ffffff; --line: #d1d9e0; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #e6edf3; --muted: #9198a1; --bg: #0d1117; --line: #3d444d; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.7 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+  .clip-meta { border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+  .clip-meta dt { font-weight: 600; float: left; clear: left; width: 72px; }
+  .clip-meta dd { margin: 0 0 4px 72px; word-break: break-all; }
+  .clip-meta a { color: inherit; }
+  article img { max-width: 100%; height: auto; }
+  article pre { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+<dl class="clip-meta">
+  <dt>원문 제목</dt><dd>{title}</dd>
+  <dt>원문 주소</dt><dd><a href="{url}">{url}</a></dd>
+  <dt>저장일</dt><dd>{saved}</dd>
+</dl>
+<article>
+{content}
+</article>
+</main>
+</body>
+</html>
