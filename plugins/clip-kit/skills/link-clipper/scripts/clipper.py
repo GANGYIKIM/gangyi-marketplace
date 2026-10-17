@@ -6,7 +6,13 @@
   check                              필요한 패키지와 브라우저가 있는지 확인
   links FILE                         파일에서 링크를 뽑아 중복 없이 나열
   find URL --root CLIPS              같은 원문 주소의 클립이 이미 있는지 찾기
-  fetch URL --out TMPDIR             페이지를 열어 본문 HTML(clip.html)과 전체 캡처(clip.png) 저장
+  fetch URL --out TMPDIR [--headed]  페이지를 열어 본문 HTML(clip.html)과 전체 캡처(clip.png) 저장.
+                                     403·봇 차단이면 설치된 Chrome 창으로 한 번 더 시도.
+                                     --headed는 처음부터 Chrome 창으로 연다
+  fetch-file FILE --out TMPDIR [--url URL]
+                                     브라우저에서 저장한 HTML 파일로 같은 결과물을 만든다
+  inbox --root CLIPS                 <root>/inbox/의 HTML 파일과 파일별 원문 주소 나열
+  discard FILE                       처리한 파일과 함께 저장된 <이름>_files 폴더를 지운다
   place --tmp TMPDIR --root CLIPS --name NAME
                                      임시 결과를 <root>/<slug>/로 옮기고, 같은 원문의 이전 클립은 archive/로 보관
   log --root CLIPS --url URL --result 성공|실패|갱신 [--reason TEXT]
@@ -58,11 +64,13 @@ def out(data, code=0):
 _TMP = None  # fetch가 만든 임시 폴더. 실패하면 지운다.
 
 
-def fail(category, detail, retryable):
+def fail(category, detail, retryable, **extra):
     if _TMP is not None:
         shutil.rmtree(_TMP, ignore_errors=True)
-    out({"ok": False, "category": category, "detail": detail, "retryable": retryable,
-         "reason": f"{category}: {detail} ({'재시도 가능' if retryable else '재시도 불가'})"})
+    data = {"ok": False, "category": category, "detail": detail, "retryable": retryable,
+            "reason": f"{category}: {detail} ({'재시도 가능' if retryable else '재시도 불가'})"}
+    data.update({k: v for k, v in extra.items() if v is not None})
+    out(data)
 
 
 def today():
@@ -82,15 +90,23 @@ def cmd_check(_):
     except ImportError:
         missing.append("playwright")
         sync_playwright = None
-    browser_ok = False
+    browser_ok = chrome_ok = False
     if sync_playwright:
         try:
             with sync_playwright() as p:
                 p.chromium.launch().close()
-            browser_ok = True
+                browser_ok = True
+                try:
+                    p.chromium.launch(channel="chrome").close()
+                    chrome_ok = True
+                except Exception:
+                    pass
         except Exception:
             pass
     out({"ok": not missing and browser_ok, "missing_packages": missing, "browser_installed": browser_ok,
+         "chrome_installed": chrome_ok,
+         "chrome_note": None if chrome_ok else
+         "막힌 사이트를 Chrome 창으로 다시 시도하려면 Google Chrome이 필요함 (https://www.google.com/chrome/)",
          "install": ["python3 -m pip install --user playwright readability-lxml lxml_html_clean",
                      "python3 -m playwright install chromium"]})
 
@@ -142,36 +158,44 @@ def cmd_find(a):
 
 
 # ---------------------------------------------------------------- fetch
+class ClipFail(Exception):
+    """클리핑 실패. blocked=True면 화면 없는 브라우저만 막혔을 수 있어 Chrome으로 다시 시도할 만하다."""
+
+    def __init__(self, category, detail, retryable, blocked=False):
+        super().__init__(detail)
+        self.category, self.detail, self.retryable, self.blocked = category, detail, retryable, blocked
+
+
 def classify_exception(msg):
     m = msg.upper()
     if "ERR_NAME_NOT_RESOLVED" in m:
-        fail("주소 오류", "존재하지 않는 도메인", False)
+        raise ClipFail("주소 오류", "존재하지 않는 도메인", False)
     if "TIMEOUT" in m:
-        fail("네트워크", "시간 초과", True)
+        raise ClipFail("네트워크", "시간 초과", True)
     if any(k in m for k in ("ERR_CONNECTION", "ERR_INTERNET_DISCONNECTED", "ERR_ADDRESS_UNREACHABLE",
                             "ERR_TUNNEL_CONNECTION_FAILED", "ERR_NETWORK", "ERR_SSL", "ERR_CERT")):
-        fail("네트워크", "연결 실패", True)
-    if "ERR_INVALID_URL" in m:
-        fail("주소 오류", "잘못된 형식의 주소", False)
-    fail("도구 오류", f"페이지 열기 실패: {msg.splitlines()[0][:120]}", True)
+        raise ClipFail("네트워크", "연결 실패", True)
+    if "ERR_INVALID_URL" in m or "ERR_FILE_NOT_FOUND" in m:
+        raise ClipFail("주소 오류", "잘못된 형식의 주소", False)
+    raise ClipFail("도구 오류", f"페이지 열기 실패: {msg.splitlines()[0][:120]}", True)
 
 
 def classify_status(status, page_text):
     if status in (404, 410):
-        fail("페이지 없음", str(status), False)
+        raise ClipFail("페이지 없음", str(status), False)
     if status == 401:
-        fail("접근 제한", "로그인 필요 (401)", False)
+        raise ClipFail("접근 제한", "로그인 필요 (401)", False)
     if status == 403:
         low = page_text.lower()
         if any(k in low for k in BOT_MARKERS):
-            fail("접근 제한", "봇 차단 (403)", False)
-        fail("접근 제한", "권한 없음 (403)", False)
+            raise ClipFail("접근 제한", "봇 차단 (403)", False, blocked=True)
+        raise ClipFail("접근 제한", "권한 없음 또는 봇 차단 (403)", False, blocked=True)
     if status == 429:
-        fail("서버 오류", "요청 과다 (429)", True)
+        raise ClipFail("서버 오류", "요청 과다 (429)", True)
     if status >= 500:
-        fail("서버 오류", str(status), True)
+        raise ClipFail("서버 오류", str(status), True)
     if status >= 400:
-        fail("접근 제한", f"HTTP {status}", False)
+        raise ClipFail("접근 제한", f"HTTP {status}", False)
 
 
 def wait_for_render(page):
@@ -202,6 +226,95 @@ def auto_scroll(page):
     page.wait_for_timeout(300)
 
 
+def launch(p, use_chrome):
+    """use_chrome이면 설치된 Google Chrome 창을 띄우고, 아니면 Playwright의 화면 없는 Chromium을 쓴다."""
+    if use_chrome:
+        return p.chromium.launch(headless=False, channel="chrome")
+    return p.chromium.launch()
+
+
+def capture(p, target, tmp, use_chrome, from_file=False):
+    """target을 열어 렌더링이 끝난 HTML과 전체 캡처(tmp/clip.png)를 얻는다. 실패하면 ClipFail."""
+    try:
+        browser = launch(p, use_chrome)
+    except Exception as e:
+        what = "Chrome 실행 실패 (Google Chrome이 없거나 창을 띄울 수 없음)" if use_chrome else "브라우저 실행 실패"
+        raise ClipFail("도구 오류", f"{what}: {str(e).splitlines()[0][:80]}", True)
+    try:
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        failed_css = []
+
+        def on_css_failed(req):
+            if req.resource_type == "stylesheet" and req.url not in failed_css:
+                failed_css.append(req.url)
+
+        def on_css_response(res):
+            if res.request.resource_type == "stylesheet" and res.status >= 400 and res.url not in failed_css:
+                failed_css.append(res.url)
+
+        page.on("requestfailed", on_css_failed)
+        page.on("response", on_css_response)
+        try:
+            resp = page.goto(target, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
+        except Exception as e:
+            classify_exception(str(e))
+        wait_for_render(page)
+        status = resp.status if resp else 0
+        if not from_file:
+            body_text = page.inner_text("body") if page.query_selector("body") else ""
+            classify_status(status, body_text)
+            if LOGIN_PATH_RE.search(urlparse(page.url).path) and not LOGIN_PATH_RE.search(urlparse(target).path):
+                raise ClipFail("접근 제한", "로그인 페이지로 이동함", False)
+        has_password = page.query_selector('input[type="password"]') is not None
+        auto_scroll(page)
+        wait_for_render(page)  # 스크롤로 새로 불러온 이미지까지 기다린다
+        page.wait_for_timeout(SETTLE_MS)
+        rendered = page.content()
+        page_title = page.title()
+        lang = page.evaluate("document.documentElement.lang") or ""
+        try:
+            page.screenshot(path=str(tmp / "clip.png"), full_page=True)
+        except Exception as e:
+            raise ClipFail("도구 오류", f"캡처 실패: {str(e).splitlines()[0][:100]}", True)
+        return {"rendered": rendered, "page_title": page_title, "lang": lang, "final_url": page.url,
+                "status": status, "has_password": has_password, "failed_css": failed_css}
+    finally:
+        browser.close()
+
+
+def build_clip(tmp, url, cap):
+    """렌더링 결과에서 본문을 추려 tmp/clip.html을 만든다. 본문이 없거나 로그인 화면이면 ClipFail."""
+    from readability import Document
+    doc = Document(cap["rendered"], url=url)
+    content = doc.summary(html_partial=True)
+    title = (doc.short_title() or cap["page_title"] or urlparse(url).netloc).strip()
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", content)).strip()
+    if cap["has_password"] and len(text) < 1500:
+        raise ClipFail("접근 제한", "로그인 필요 (로그인 화면)", False)
+    if len(text) < MIN_TEXT_LENGTH:
+        raise ClipFail("본문 없음", "본문을 거의 뽑지 못함", True)
+    saved = today()
+    tpl = TEMPLATE.read_text(encoding="utf-8")
+    page_html = (tpl.replace("{lang}", html.escape(cap["lang"] or ""))
+                    .replace("{title}", html.escape(title))
+                    .replace("{url}", html.escape(url))
+                    .replace("{saved}", saved)
+                    .replace("{content}", content))
+    (tmp / "clip.html").write_text(page_html, encoding="utf-8")
+    failed = cap["failed_css"]
+    return {"ok": True, "url": url, "final_url": cap["final_url"], "status": cap["status"], "title": title,
+            "lang": cap["lang"], "title_too_long": len(title) > MAX_NAME_LENGTH,
+            "text_length": len(text), "text_preview": text[:300],
+            "style_warning": (f"스타일시트 {len(failed)}개를 불러오지 못해 캡처의 모양이 원본과 다를 수 있음"
+                              if failed else None),
+            "failed_stylesheets": failed[:5],
+            "html": str(tmp / "clip.html"), "png": str(tmp / "clip.png")}
+
+
+def report_fail(e, **extra):
+    fail(e.category, e.detail, e.retryable, **extra)
+
+
 def cmd_fetch(a):
     url = a.url.strip()
     parsed = urlparse(url)
@@ -209,7 +322,7 @@ def cmd_fetch(a):
         fail("주소 오류", "잘못된 형식의 주소", False)
     try:
         from playwright.sync_api import sync_playwright
-        from readability import Document
+        import readability  # noqa: F401
     except ImportError:
         fail("도구 오류", "필요한 패키지가 설치되지 않음 (check 명령으로 확인)", True)
 
@@ -217,85 +330,124 @@ def cmd_fetch(a):
     tmp = Path(a.out)
     tmp.mkdir(parents=True, exist_ok=True)
     _TMP = tmp
+    # 평소에는 화면 없는 브라우저로 열고, 403·봇 차단이면 설치된 Chrome 창으로 한 번 더 연다.
+    methods = ["chrome"] if a.headed else ["headless", "chrome"]
+    block, chrome_error, chrome_tried = None, None, False
+    with sync_playwright() as p:
+        for method in methods:
+            chrome_tried = chrome_tried or method == "chrome"
+            try:
+                cap = capture(p, url, tmp, use_chrome=(method == "chrome"))
+                result = build_clip(tmp, url, cap)
+                result["method"] = method
+                out(result)
+            except ClipFail as e:
+                if method == "headless" and e.blocked:
+                    block = e
+                    continue
+                if method == "chrome" and e.category == "도구 오류" and block:
+                    chrome_error = e.detail
+                    break
+                block = block if (block and e.blocked) else e
+                break
+    report_fail(block, blocked=block.blocked or None, chrome_tried=chrome_tried or None,
+                chrome_error=chrome_error,
+                hint=("브라우저에서 페이지를 저장(⌘+S)한 HTML 파일을 주거나 inbox/에 넣으면 클리핑할 수 있음"
+                      if block.blocked else None))
+
+
+# ---------------------------------------------------------------- fetch-file
+SAVED_FROM_RE = re.compile(r"<!--\s*saved from url=\(\d+\)(\S+?)\s*-->", re.I)
+
+
+def detect_source(text):
+    """저장한 HTML에서 원문 주소를 찾는다: Chrome의 saved from url 주석 → canonical → og:url."""
+    m = SAVED_FROM_RE.search(text[:2000])
+    if m and m.group(1).startswith("http"):
+        return html.unescape(m.group(1))
     try:
-        with sync_playwright() as p:
-            try:
-                browser = p.chromium.launch()
-            except Exception as e:  # 브라우저 미설치 등
-                fail("도구 오류", f"브라우저 실행 실패: {str(e).splitlines()[0][:100]}", True)
-            page = browser.new_page(viewport={"width": 1280, "height": 900})
-            failed_css = []
+        import lxml.html
+        tree = lxml.html.fromstring(text)
+        for xp in ('//link[@rel="canonical"]/@href', '//meta[@property="og:url"]/@content'):
+            v = tree.xpath(xp)
+            if v and v[0].strip().startswith("http"):
+                return v[0].strip()
+    except Exception:
+        pass
+    return None
 
-            def on_css_failed(req):
-                if req.resource_type == "stylesheet" and req.url not in failed_css:
-                    failed_css.append(req.url)
 
-            def on_css_response(res):
-                if res.request.resource_type == "stylesheet" and res.status >= 400 and res.url not in failed_css:
-                    failed_css.append(res.url)
+def assets_dir(path):
+    """브라우저가 '웹페이지, 전체'로 저장할 때 함께 만드는 이미지·CSS 폴더."""
+    return path.with_name(f"{path.stem}_files")
 
-            page.on("requestfailed", on_css_failed)
-            page.on("response", on_css_response)
-            try:
-                resp = page.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
-                wait_for_render(page)
-            except Exception as e:
-                browser.close()
-                classify_exception(str(e))
-            status = resp.status if resp else 0
-            body_text = page.inner_text("body") if page.query_selector("body") else ""
-            classify_status(status, body_text)
 
-            final_url = page.url
-            if LOGIN_PATH_RE.search(urlparse(final_url).path) and not LOGIN_PATH_RE.search(parsed.path):
-                browser.close()
-                fail("접근 제한", "로그인 페이지로 이동함", False)
-            has_password = page.query_selector('input[type="password"]') is not None
+def cmd_fetch_file(a):
+    src = Path(a.file).expanduser()
+    if not src.is_file() or src.suffix.lower() not in (".html", ".htm"):
+        out({"ok": False, "error": "not_html", "detail": "HTML 파일(.html, .htm)이 아님", "file": str(src)}, 1)
+    text = src.read_text(encoding="utf-8", errors="replace")
+    url = (a.url or "").strip() or detect_source(text)
+    if not url:
+        out({"ok": False, "error": "url_missing", "detail": "원문 주소를 찾지 못함. --url로 알려 줄 것",
+             "file": str(src)}, 1)
+    try:
+        from playwright.sync_api import sync_playwright
+        import readability  # noqa: F401
+    except ImportError:
+        fail("도구 오류", "필요한 패키지가 설치되지 않음 (check 명령으로 확인)", True)
 
-            auto_scroll(page)
-            wait_for_render(page)  # 스크롤로 새로 불러온 이미지까지 기다린다
-            page.wait_for_timeout(SETTLE_MS)
-            rendered = page.content()
-            page_title = page.title()
-            lang = page.evaluate("document.documentElement.lang") or ""
-            try:
-                page.screenshot(path=str(tmp / "clip.png"), full_page=True)
-            except Exception as e:
-                browser.close()
-                fail("도구 오류", f"캡처 실패: {str(e).splitlines()[0][:100]}", True)
-            browser.close()
-    except SystemExit:
-        raise
-    except Exception as e:
-        fail("도구 오류", str(e).splitlines()[0][:120], True)
+    global _TMP
+    tmp = Path(a.out)
+    tmp.mkdir(parents=True, exist_ok=True)
+    _TMP = tmp
+    if assets_dir(src).is_dir():
+        target = src.resolve().as_uri()  # 함께 저장된 이미지·CSS를 상대 경로로 그대로 쓴다
+    else:
+        # HTML만 저장된 경우: 원래 사이트 주소를 기준으로 이미지·CSS를 불러오도록 <base>를 넣는다
+        with_base = re.sub(r"(<head[^>]*>)", lambda m: m.group(1) + f'<base href="{html.escape(url)}">',
+                           text, count=1, flags=re.I) if "<base" not in text.lower() else text
+        staged = tmp / "source.html"
+        staged.write_text(with_base, encoding="utf-8")
+        target = staged.resolve().as_uri()
+    with sync_playwright() as p:
+        try:
+            cap = capture(p, target, tmp, use_chrome=False, from_file=True)
+            result = build_clip(tmp, url, cap)
+        except ClipFail as e:
+            report_fail(e)
+    (tmp / "source.html").unlink(missing_ok=True)
+    result.update({"method": "file", "source_file": str(src)})
+    out(result)
 
-    doc = Document(rendered, url=final_url)
-    content = doc.summary(html_partial=True)
-    title = (doc.short_title() or page_title or parsed.netloc).strip()
-    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", content)).strip()
 
-    if has_password and len(text) < 1500:
-        (tmp / "clip.png").unlink(missing_ok=True)
-        fail("접근 제한", "로그인 필요 (로그인 화면)", False)
-    if len(text) < MIN_TEXT_LENGTH:
-        (tmp / "clip.png").unlink(missing_ok=True)
-        fail("본문 없음", "본문을 거의 뽑지 못함", True)
+# ---------------------------------------------------------------- inbox / discard
+def cmd_inbox(a):
+    box = Path(a.root) / "inbox"
+    files = sorted(f for f in box.glob("*") if f.is_file() and f.suffix.lower() in (".html", ".htm")) \
+        if box.is_dir() else []
+    items, missing = [], []
+    for f in files:
+        url = detect_source(f.read_text(encoding="utf-8", errors="replace"))
+        items.append({"file": str(f), "url": url})
+        if not url:
+            missing.append(str(f))
+    out({"inbox": str(box), "count": len(items), "files": items, "missing_url": missing})
 
-    saved = today()
-    tpl = TEMPLATE.read_text(encoding="utf-8")
-    page_html = (tpl.replace("{lang}", html.escape(lang or ""))
-                    .replace("{title}", html.escape(title))
-                    .replace("{url}", html.escape(url))
-                    .replace("{saved}", saved)
-                    .replace("{content}", content))
-    (tmp / "clip.html").write_text(page_html, encoding="utf-8")
-    out({"ok": True, "url": url, "final_url": final_url, "status": status, "title": title,
-         "lang": lang, "title_too_long": len(title) > MAX_NAME_LENGTH,
-         "text_length": len(text), "text_preview": text[:300],
-         "style_warning": (f"스타일시트 {len(failed_css)}개를 불러오지 못해 캡처의 모양이 원본과 다를 수 있음"
-                           if failed_css else None),
-         "failed_stylesheets": failed_css[:5],
-         "html": str(tmp / "clip.html"), "png": str(tmp / "clip.png")})
+
+def cmd_discard(a):
+    f = Path(a.file).expanduser()
+    if f.suffix.lower() not in (".html", ".htm", ".md", ".txt", ".csv"):
+        out({"ok": False, "error": "지울 수 있는 형식이 아님", "file": str(f)}, 1)
+    removed = []
+    if f.is_file():
+        f.unlink()
+        removed.append(str(f))
+    d = assets_dir(f)
+    if d.is_dir():
+        shutil.rmtree(d)
+        removed.append(str(d))
+    out({"ok": True, "removed": removed})
 
 
 # ---------------------------------------------------------------- place
@@ -396,12 +548,18 @@ def main():
     p = sub.add_parser("links"); p.add_argument("file")
     p = sub.add_parser("find"); p.add_argument("url"); p.add_argument("--root", required=True)
     p = sub.add_parser("fetch"); p.add_argument("url"); p.add_argument("--out", required=True)
+    p.add_argument("--headed", action="store_true", help="처음부터 설치된 Chrome 창으로 연다")
+    p = sub.add_parser("fetch-file"); p.add_argument("file"); p.add_argument("--out", required=True)
+    p.add_argument("--url", default="", help="원문 주소. 파일 안에서 찾지 못할 때 지정")
+    p = sub.add_parser("inbox"); p.add_argument("--root", required=True)
+    p = sub.add_parser("discard"); p.add_argument("file")
     p = sub.add_parser("place"); p.add_argument("--tmp", required=True); p.add_argument("--root", required=True); p.add_argument("--name", required=True)
     p = sub.add_parser("log"); p.add_argument("--root", required=True); p.add_argument("--url", required=True)
     p.add_argument("--result", required=True, choices=["성공", "실패", "갱신"]); p.add_argument("--reason", default="")
     p = sub.add_parser("retry-list"); p.add_argument("--root", required=True)
     a = ap.parse_args()
-    {"check": cmd_check, "links": cmd_links, "find": cmd_find, "fetch": cmd_fetch, "place": cmd_place,
+    {"check": cmd_check, "links": cmd_links, "find": cmd_find, "fetch": cmd_fetch, "fetch-file": cmd_fetch_file,
+     "inbox": cmd_inbox, "discard": cmd_discard, "place": cmd_place,
      "log": cmd_log, "retry-list": cmd_retry_list}[a.cmd](a)
 
 

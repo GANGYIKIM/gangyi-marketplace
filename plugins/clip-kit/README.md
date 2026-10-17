@@ -6,7 +6,7 @@
 
 | 스킬 | 설명 | 호출 |
 |---|---|---|
-| link-clipper | 링크의 원문을 본문만 추린 HTML과 페이지 전체 캡처(PNG)로 저장하고, 결과를 `clip-log.md`에 기록합니다 | `/clip-kit:link-clipper` 또는 "이 링크 클리핑해줘" |
+| link-clipper | 링크나 브라우저에서 저장한 HTML 파일을 본문만 추린 HTML과 페이지 전체 캡처(PNG)로 저장하고, 결과를 `clip-log.md`에 기록합니다 | `/clip-kit:link-clipper` 또는 "이 링크 클리핑해줘" |
 
 ## 설치
 
@@ -28,12 +28,15 @@ python3 -m playwright install chromium
 - `playwright`: 브라우저로 페이지를 열고 전체 캡처를 찍습니다. Homebrew 없이 pip로 설치되고, 두 번째 명령이 브라우저(Chromium)를 내려받습니다.
 - `readability-lxml`, `lxml_html_clean`: 페이지에서 본문만 추립니다.
 
+[Google Chrome](https://www.google.com/chrome/)도 설치해 두는 것을 권합니다. 화면 없는 브라우저의 접속을 막는 사이트는 설치된 Chrome 창을 띄워 한 번 더 시도하는데, Chrome이 없으면 이 재시도를 건너뜁니다. 재시도하는 동안 Chrome 창이 잠깐 나타났다가 닫힙니다.
+
 ## 저장 구조
 
 ```
 clips/
 ├── clip-log.md                  ← 클리핑 기록 (날짜, 링크, 결과, 실패 사유)
 ├── links.md                     ← 클리핑할 링크 대기열 (처리 후 삭제)
+├── inbox/                       ← 브라우저에서 저장한 HTML 파일 대기열 (처리 후 삭제)
 └── react-19-stable-release/
     ├── react-19-stable-release.html
     ├── react-19-stable-release.png
@@ -41,6 +44,19 @@ clips/
 ```
 
 기본 위치는 `clips/`이며, 요청에서 위치를 말하거나 프로젝트 CLAUDE.md에 규칙을 적으면 그 위치를 씁니다.
+
+## 막힌 사이트 클리핑하기
+
+Chrome 창으로도 막히는 사이트는 직접 저장한 파일로 클리핑할 수 있습니다.
+
+1. 평소 쓰는 브라우저에서 페이지를 열고 저장합니다 (⌘+S, "웹페이지, 전체" 권장).
+2. 파일을 바로 주거나, 여러 개라면 `clips/inbox/`에 넣습니다.
+
+```
+~/Downloads/공고.html 클리핑해줘. 원문은 https://example.com/jobs/1
+```
+
+원문 주소는 파일 안에서 찾고(Chrome이 남기는 주석, canonical 주소), 찾지 못한 파일만 따로 묻습니다. 로그인해야 보이는 페이지도 내가 로그인한 상태에서 저장한 파일이라면 클리핑할 수 있습니다.
 
 ## 테스트
 
