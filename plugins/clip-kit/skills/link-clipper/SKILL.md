@@ -23,10 +23,11 @@ description: 웹 링크의 원문을 본문만 추린 HTML과 페이지 전체 �
 | `clipper check` | 필요한 패키지와 브라우저 확인 |
 | `clipper links FILE` | 파일에서 링크를 뽑아 중복 없이 나열 |
 | `clipper find URL --root ROOT` | 같은 원문 주소의 클립이 이미 있는지 찾기 |
-| `clipper fetch URL --out TMPDIR` | 페이지를 열어 본문 HTML과 전체 캡처를 임시 폴더에 저장. 403·봇 차단이면 설치된 Chrome 창으로 한 번 더 시도 |
+| `clipper fetch URL --out TMPDIR` | 페이지를 열어 본문 HTML과 전체 캡처를 임시 폴더에 저장. 확인 화면이면 풀릴 때까지 기다리고, 403·봇 차단이면 설치된 Chrome 창으로 한 번 더 시도 |
 | `clipper fetch-file FILE --out TMPDIR [--url URL]` | 브라우저에서 저장한 HTML 파일로 같은 결과물을 만듦 |
 | `clipper inbox --root ROOT` | `ROOT/inbox/`의 HTML 파일과 파일별 원문 주소 나열 |
 | `clipper discard FILE` | 처리한 파일과 함께 저장된 `<이름>_files` 폴더 삭제 |
+| `clipper clear-profile` | Chrome 전용 프로필(쿠키) 삭제. 비상용 |
 | `clipper place --tmp TMPDIR --root ROOT --name NAME` | 임시 결과를 `ROOT/<이름>/`으로 옮기고, 같은 원문의 이전 클립은 `archive/`로 보관 |
 | `clipper log --root ROOT --url URL --result 성공\|실패\|갱신 [--reason 사유]` | clip-log.md에 한 줄 추가 |
 | `clipper retry-list --root ROOT` | 마지막 기록이 "재시도 가능" 실패인 링크 나열 |
@@ -46,6 +47,8 @@ description: 웹 링크의 원문을 본문만 추린 HTML과 페이지 전체 �
 `clipper check`를 실행한다. `ok`가 false면 출력의 `install` 명령을 보여주고 설치해도 되는지 묻는다. 컴퓨터에 프로그램을 설치하는 일이라 승인 없이 설치하지 않는다. 설치한 뒤에는 다시 `check`로 확인한다.
 
 `chrome_installed`가 false면 클리핑은 진행하되, 처음 한 번 `chrome_note`의 내용을 미리 알린다: 막힌 사이트를 Chrome 창으로 다시 시도하려면 Google Chrome이 필요하다. Chrome 설치는 권하기만 하고 대신 설치하지 않는다.
+
+`chrome_installed`가 true면 클리핑을 시작할 때 한 줄로 미리 알린다: "막힌 사이트는 Chrome 창이 뜰 수 있어요. 확인 버튼이 보이면 직접 눌러 주시고, 그 창에서 다른 입력은 하지 말아 주세요(최대 90초)." 스크립트가 끝나야 결과를 볼 수 있어서 실행 중에는 안내를 전할 수 없기 때문이다.
 
 ### 1. 저장 위치 정하기
 
@@ -71,9 +74,9 @@ description: 웹 링크의 원문을 본문만 추린 HTML과 페이지 전체 �
 
 ### 4. 링크마다 클리핑
 
-1. 링크는 `clipper fetch URL --out "$(mktemp -d)"`, 저장한 HTML 파일은 `clipper fetch-file FILE --out "$(mktemp -d)"`를 실행한다. 403·봇 차단일 때 Chrome 창으로 다시 시도하는 일은 스크립트가 알아서 하므로 따로 실행하지 않는다.
+1. 링크는 `clipper fetch URL --out "$(mktemp -d)"`, 저장한 HTML 파일은 `clipper fetch-file FILE --out "$(mktemp -d)"`를 실행한다. 확인 화면을 기다리는 일과 403·봇 차단일 때 Chrome 창으로 다시 시도하는 일은 스크립트가 알아서 하므로 따로 실행하지 않는다. Chrome 창에서 확인을 기다리면 최대 90초 걸릴 수 있으므로 명령의 제한 시간을 넉넉히(5분 이상) 둔다.
    - `fetch-file`이 `url_missing`을 내면 실패가 아니다. 사용자에게 원문 주소를 물어 `--url`로 다시 실행한다.
-2. **실패하면** (`ok`가 false) 출력의 `reason`을 그대로 써서 `clipper log ... --result 실패 --reason "<reason>"`으로 기록하고 다음으로 넘어간다. 출력에 `hint`가 있으면 Chrome으로도 막힌 것이니, 결과를 알릴 때 "브라우저에서 페이지를 저장(⌘+S)한 HTML 파일을 주시거나 `inbox/`에 넣어 주시면 클리핑할 수 있어요"라고 안내한다. `chrome_error`가 있으면 Chrome 창을 띄우지 못한 것이니 Chrome 설치도 함께 안내한다.
+2. **실패하면** (`ok`가 false) 출력의 `reason`을 그대로 써서 `clipper log ... --result 실패 --reason "<reason>"`으로 기록하고 다음으로 넘어간다. 출력에 `hint`가 있으면 Chrome으로도 막힌 것이니, 결과를 알릴 때 "브라우저에서 페이지를 저장(⌘+S)한 HTML 파일을 주시거나 `inbox/`에 넣어 주시면 클리핑할 수 있어요"라고 안내한다. `chrome_error`가 있으면 Chrome 창을 띄우지 못한 것이니 Chrome 설치도 함께 안내한다. 사유가 "확인 시간 초과"면 Chrome 창의 확인 버튼을 누르지 못한 것이니, 다시 시도하면서 창이 뜨면 직접 눌러 달라고 먼저 안내한다. 사유가 "다른 사이트로 이동함"이면 엉뚱한 페이지를 저장하지 않으려고 멈춘 것이니, Chrome 창에서 확인 버튼 외에는 건드리지 말아 달라고 안내하고 다시 시도한다.
 3. **성공하면** `text_preview`를 읽고, 본문 대신 구독·로그인 안내만 보이면 실패로 처리한다. 판단 기준과 사유 형식은 [references/failures.md](references/failures.md)를 따른다.
 4. **이름을 정한다.** 출력의 `title`을 원래 언어 그대로 쓰되, " · GitHub", " - Wikipedia" 같은 사이트 이름 꼬리표는 뺀다. `title_too_long`이 true면(50자 초과) 원래 언어로 20자 안팎의 명사구로 요약한다. 예: "React 19 is now stable: what's new in actions, server components, and more" → "React 19 Stable Release". 한국어 제목은 한국어로 요약한다.
 5. `clipper place --tmp TMPDIR --root ROOT --name "<이름>"`을 실행한다. `name-conflict` 오류가 나오면 다른 원문의 클립이 같은 이름을 쓰고 있는 것이니, 이름 뒤에 원문의 도메인을 붙여 다시 실행한다.

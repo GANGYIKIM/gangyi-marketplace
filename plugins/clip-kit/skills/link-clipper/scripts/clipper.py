@@ -7,25 +7,30 @@
   links FILE                         파일에서 링크를 뽑아 중복 없이 나열
   find URL --root CLIPS              같은 원문 주소의 클립이 이미 있는지 찾기
   fetch URL --out TMPDIR [--headed]  페이지를 열어 본문 HTML(clip.html)과 전체 캡처(clip.png) 저장.
-                                     403·봇 차단이면 설치된 Chrome 창으로 한 번 더 시도.
+                                     챌린지 화면이면 풀릴 때까지 기다리고, 403·봇 차단이면
+                                     설치된 Chrome 창(전용 프로필)으로 한 번 더 시도.
                                      --headed는 처음부터 Chrome 창으로 연다
   fetch-file FILE --out TMPDIR [--url URL]
                                      브라우저에서 저장한 HTML 파일로 같은 결과물을 만든다
   inbox --root CLIPS                 <root>/inbox/의 HTML 파일과 파일별 원문 주소 나열
   discard FILE                       처리한 파일과 함께 저장된 <이름>_files 폴더를 지운다
+  clear-profile                      Chrome 전용 프로필(쿠키)을 지운다. 비상용
   place --tmp TMPDIR --root CLIPS --name NAME
                                      임시 결과를 <root>/<slug>/로 옮기고, 같은 원문의 이전 클립은 archive/로 보관
   log --root CLIPS --url URL --result 성공|실패|갱신 [--reason TEXT]
                                      <root>/clip-log.md에 한 줄 추가
   retry-list --root CLIPS            링크별 마지막 기록이 "재시도 가능" 실패인 링크 나열
 
-의존성: playwright(+ chromium), readability-lxml, lxml_html_clean
+의존성: playwright(+ chromium), readability-lxml, lxml_html_clean. 권장: Google Chrome
+환경 변수(테스트용): CLIPPER_PROFILE_DIR, CLIPPER_CHALLENGE_WAIT_MS, CLIPPER_MANUAL_CHALLENGE_WAIT_MS
 """
 import argparse
 import datetime as dt
 import html
 import json
+import os
 import re
+import time
 import shutil
 import sys
 from pathlib import Path
@@ -54,6 +59,27 @@ SETTLE_MS = 800
 URL_RE = re.compile(r"https?://[^\s<>\"'()\[\]{}|]+")
 LOGIN_PATH_RE = re.compile(r"/(login|log-in|signin|sign-in|sign_in|auth|sso|accounts?/login|session)(/|$|\?)", re.I)
 BOT_MARKERS = ("cf-chl", "just a moment", "attention required", "captcha", "are you a robot", "access denied")
+
+# 브라우저 환경. 실제 사용 환경(한국, 서울 시간대)과 맞춘다.
+VIEWPORT = {"width": 1280, "height": 900}
+LOCALE = "ko-KR"
+TIMEZONE = "Asia/Seoul"
+# Chrome 창 전용 프로필. 확인을 통과한 쿠키가 실행 사이에 남는다.
+# 평소 쓰는 Chrome 프로필은 Chrome이 켜져 있으면 잠기므로 쓰지 않는다.
+PROFILE_DIR = Path(os.environ.get("CLIPPER_PROFILE_DIR") or Path.home() / ".cache" / "link-clipper" / "chrome-profile")
+
+# 기다리면 풀리는 챌린지 화면의 표지. "access denied" 같은 확정 차단은 넣지 않는다.
+CHALLENGE_MARKERS = ("just a moment", "checking your browser", "cf-chl", "challenge-platform",
+                     "verify you are human", "잠시만 기다려", "브라우저를 확인")
+# 챌린지 화면과 함께 오는 첫 응답 코드.
+CHALLENGE_STATUSES = (403, 429, 503)
+# 화면 없는 브라우저에서 자동 JS 챌린지가 풀리기를 기다리는 시간. 보통 5초 안에 끝난다.
+# 아래 두 값의 환경 변수는 테스트에서 대기 시간을 줄이려는 용도다.
+CHALLENGE_WAIT_MS = int(os.environ.get("CLIPPER_CHALLENGE_WAIT_MS", 15_000))
+# Chrome 창에서 사용자가 직접 확인 버튼을 누를 때까지 기다리는 시간.
+MANUAL_CHALLENGE_WAIT_MS = int(os.environ.get("CLIPPER_MANUAL_CHALLENGE_WAIT_MS", 90_000))
+# 챌린지가 풀렸는지 확인하는 간격.
+CHALLENGE_POLL_MS = 500
 
 
 def out(data, code=0):
@@ -105,6 +131,7 @@ def cmd_check(_):
             pass
     out({"ok": not missing and browser_ok, "missing_packages": missing, "browser_installed": browser_ok,
          "chrome_installed": chrome_ok,
+         "profile_dir": str(PROFILE_DIR),
          "chrome_note": None if chrome_ok else
          "막힌 사이트를 Chrome 창으로 다시 시도하려면 Google Chrome이 필요함 (https://www.google.com/chrome/)",
          "install": ["python3 -m pip install --user playwright readability-lxml lxml_html_clean",
@@ -212,37 +239,116 @@ def wait_for_render(page):
 
 
 def auto_scroll(page):
-    """지연 로딩되는 이미지를 불러오려고 페이지 끝까지 천천히 스크롤한 뒤 맨 위로 돌아간다."""
-    last = -1
-    for _ in range(MAX_SCROLL_STEPS):
-        height = page.evaluate("document.documentElement.scrollHeight")
-        page.evaluate("window.scrollBy(0, window.innerHeight)")
-        page.wait_for_timeout(250)
-        pos = page.evaluate("window.scrollY + window.innerHeight")
-        if pos >= height or pos == last:
-            break
-        last = pos
-    page.evaluate("window.scrollTo(0, 0)")
-    page.wait_for_timeout(300)
+    """지연 로딩되는 이미지를 불러오려고 페이지 끝까지 천천히 스크롤한 뒤 맨 위로 돌아간다.
+    스크롤 도중 페이지가 이동하면 스크롤을 멈추고 새 페이지가 로드되기를 기다린다."""
+    try:
+        last = -1
+        for _ in range(MAX_SCROLL_STEPS):
+            height = page.evaluate("document.documentElement.scrollHeight")
+            page.evaluate("window.scrollBy(0, window.innerHeight)")
+            page.wait_for_timeout(250)
+            pos = page.evaluate("window.scrollY + window.innerHeight")
+            if pos >= height or pos == last:
+                break
+            last = pos
+        page.evaluate("window.scrollTo(0, 0)")
+        page.wait_for_timeout(300)
+    except Exception:
+        wait_for_render(page)
 
 
-def launch(p, use_chrome):
-    """use_chrome이면 설치된 Google Chrome 창을 띄우고, 아니면 Playwright의 화면 없는 Chromium을 쓴다."""
+def read_page(page, fn):
+    """페이지가 이동하는 중이면 로드를 기다렸다가 다시 읽는다. 세 번 안에 못 읽으면 예외를 그대로 낸다."""
+    for attempt in range(3):
+        try:
+            return fn()
+        except Exception:
+            if attempt == 2:
+                raise
+            wait_for_render(page)
+
+
+def open_context(p, use_chrome):
+    """브라우저 컨텍스트를 연다. (context, closer)를 돌려주며, 다 쓰면 closer.close()를 부른다.
+
+    - Chrome: 설치된 Google Chrome 창을 전용 프로필로 연다. 통과 쿠키가 다음 실행에도 남는다.
+    - headless: Playwright의 화면 없는 Chromium. User-Agent의 HeadlessChrome을 Chrome으로 바꾼다.
+    둘 다 자동화 표시를 줄이고, 언어·시간대를 실제 사용 환경에 맞춘다.
+    """
+    common = {"viewport": VIEWPORT, "locale": LOCALE, "timezone_id": TIMEZONE}
     if use_chrome:
-        return p.chromium.launch(headless=False, channel="chrome")
-    return p.chromium.launch()
+        PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+        ctx = p.chromium.launch_persistent_context(
+            str(PROFILE_DIR), channel="chrome", headless=False,
+            ignore_default_args=["--enable-automation"],
+            args=["--disable-blink-features=AutomationControlled"], **common)
+        return ctx, ctx
+    browser = p.chromium.launch()
+    probe = browser.new_page()
+    ua = probe.evaluate("navigator.userAgent")
+    probe.close()
+    ctx = browser.new_context(user_agent=ua.replace("HeadlessChrome", "Chrome"), **common)
+    return ctx, browser
+
+
+def site_of(url):
+    """주소의 사이트를 비교용으로 단순화한다. 앞의 www.만 떼고 호스트를 소문자로 쓴다."""
+    host = (urlparse(url).hostname or "").lower()
+    return host[4:] if host.startswith("www.") else host
+
+
+def same_site(url, base):
+    """url이 base와 같은 사이트(또는 그 하위 도메인)인지 본다. file:// 주소는 file:// 끼리만 같다."""
+    if base.startswith("file:"):
+        return url.startswith("file:")
+    a, b = site_of(url), site_of(base)
+    return bool(a) and (a == b or a.endswith("." + b) or b.endswith("." + a))
+
+
+def is_challenge(page):
+    """지금 화면이 기다리면 풀리는 챌린지인지 본다. 이동 중이라 읽을 수 없으면 아직 챌린지로 본다."""
+    try:
+        head = (page.title() + " " + page.content()[:5000]).lower()
+    except Exception:
+        return True
+    return any(k in head for k in CHALLENGE_MARKERS)
+
+
+def wait_out_challenge(page, timeout_ms, manual):
+    """챌린지가 풀릴 때까지 기다린다. 풀리면 True. 안내는 stdout의 JSON을 해치지 않게 stderr로만 낸다."""
+    if manual:
+        print(f"Chrome 창에 확인 화면이 떴어요. 확인 버튼이 보이면 직접 눌러 주세요 (최대 {timeout_ms // 1000}초).",
+              file=sys.stderr, flush=True)
+    deadline = time.monotonic() + timeout_ms / 1000
+    while time.monotonic() < deadline:
+        try:
+            page.wait_for_timeout(CHALLENGE_POLL_MS)
+        except Exception:
+            time.sleep(CHALLENGE_POLL_MS / 1000)  # 페이지가 바뀌는 중이면 잠시 쉬고 다시 본다
+        if not is_challenge(page):
+            return True
+    return False
 
 
 def capture(p, target, tmp, use_chrome, from_file=False):
     """target을 열어 렌더링이 끝난 HTML과 전체 캡처(tmp/clip.png)를 얻는다. 실패하면 ClipFail."""
     try:
-        browser = launch(p, use_chrome)
+        ctx, closer = open_context(p, use_chrome)
     except Exception as e:
         what = "Chrome 실행 실패 (Google Chrome이 없거나 창을 띄울 수 없음)" if use_chrome else "브라우저 실행 실패"
         raise ClipFail("도구 오류", f"{what}: {str(e).splitlines()[0][:80]}", True)
     try:
-        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
+        base_url = None
         failed_css = []
+        nav_statuses = []
+
+        def on_nav_response(res):
+            try:
+                if res.request.is_navigation_request() and res.frame == page.main_frame:
+                    nav_statuses.append(res.status)
+            except Exception:
+                pass
 
         def on_css_failed(req):
             if req.resource_type == "stylesheet" and req.url not in failed_css:
@@ -254,32 +360,61 @@ def capture(p, target, tmp, use_chrome, from_file=False):
 
         page.on("requestfailed", on_css_failed)
         page.on("response", on_css_response)
+        page.on("response", on_nav_response)
         try:
             resp = page.goto(target, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
         except Exception as e:
             classify_exception(str(e))
         wait_for_render(page)
+        # 서버 리다이렉트(짧은 주소 등)를 거쳐 처음 도착한 주소를 기준 사이트로 삼는다
+        base_url = resp.url if resp else target
         status = resp.status if resp else 0
-        if not from_file:
+        passed_challenge = False
+        if not from_file and status in CHALLENGE_STATUSES and is_challenge(page):
+            # 챌린지 화면이면 첫 응답으로 판정하지 않고 풀릴 때까지 기다린다
+            limit = MANUAL_CHALLENGE_WAIT_MS if use_chrome else CHALLENGE_WAIT_MS
+            if not wait_out_challenge(page, limit, manual=use_chrome):
+                raise ClipFail("접근 제한", "봇 차단: 확인 시간 초과", True, blocked=True)
+            passed_challenge = True
+            wait_for_render(page)
+            status = nav_statuses[-1] if nav_statuses else status
+        if not from_file and not passed_challenge:
+            # 챌린지를 통과했다면 마지막 응답 코드가 남아 있어도 화면은 정상이므로 상태로 판정하지 않는다
             body_text = page.inner_text("body") if page.query_selector("body") else ""
             classify_status(status, body_text)
             if LOGIN_PATH_RE.search(urlparse(page.url).path) and not LOGIN_PATH_RE.search(urlparse(target).path):
                 raise ClipFail("접근 제한", "로그인 페이지로 이동함", False)
-        has_password = page.query_selector('input[type="password"]') is not None
+        has_password = read_page(page, lambda: page.query_selector('input[type="password"]')) is not None
         auto_scroll(page)
         wait_for_render(page)  # 스크롤로 새로 불러온 이미지까지 기다린다
         page.wait_for_timeout(SETTLE_MS)
-        rendered = page.content()
-        page_title = page.title()
-        lang = page.evaluate("document.documentElement.lang") or ""
+        if not same_site(page.url, base_url):
+            # Chrome 창에서 다른 입력을 했거나 스크립트가 다른 사이트로 보냈다. 엉뚱한 페이지를 저장하지 않는다
+            raise ClipFail("도구 오류", "클리핑 중 페이지가 다른 사이트로 이동함", True)
+        rendered = read_page(page, page.content)
+        page_title = read_page(page, page.title)
+        lang = read_page(page, lambda: page.evaluate("document.documentElement.lang")) or ""
+        if not same_site(page.url, base_url):  # 읽는 사이에 이동했을 수도 있다
+            raise ClipFail("도구 오류", "클리핑 중 페이지가 다른 사이트로 이동함", True)
         try:
             page.screenshot(path=str(tmp / "clip.png"), full_page=True)
         except Exception as e:
             raise ClipFail("도구 오류", f"캡처 실패: {str(e).splitlines()[0][:100]}", True)
         return {"rendered": rendered, "page_title": page_title, "lang": lang, "final_url": page.url,
                 "status": status, "has_password": has_password, "failed_css": failed_css}
+    except ClipFail:
+        raise
+    except Exception as e:
+        # 예상하지 못한 브라우저 오류도 JSON 한 줄 규약을 지키도록 실패로 바꾼다
+        try:
+            moved = base_url and not same_site(page.url, base_url)
+        except Exception:
+            moved = False
+        if moved:
+            raise ClipFail("도구 오류", "클리핑 중 페이지가 다른 사이트로 이동함", True)
+        raise ClipFail("도구 오류", f"페이지 처리 실패: {str(e).splitlines()[0][:100]}", True)
     finally:
-        browser.close()
+        closer.close()
 
 
 def build_clip(tmp, url, cap):
@@ -346,9 +481,9 @@ def cmd_fetch(a):
                     block = e
                     continue
                 if method == "chrome" and e.category == "도구 오류" and block:
-                    chrome_error = e.detail
+                    chrome_error = e.detail  # Chrome을 띄우지 못하면 원래 막힌 사유를 그대로 알린다
                     break
-                block = block if (block and e.blocked) else e
+                block = e  # Chrome으로 시도한 결과가 가장 최근 상태다
                 break
     report_fail(block, blocked=block.blocked or None, chrome_tried=chrome_tried or None,
                 chrome_error=chrome_error,
@@ -419,6 +554,15 @@ def cmd_fetch_file(a):
     (tmp / "source.html").unlink(missing_ok=True)
     result.update({"method": "file", "source_file": str(src)})
     out(result)
+
+
+# ---------------------------------------------------------------- clear-profile
+def cmd_clear_profile(_):
+    """비상용. 확인 화면이 계속 반복되거나 로그인 정보를 지우고 싶을 때만 쓴다. 평소에는 쌓아 두는 게 낫다."""
+    existed = PROFILE_DIR.exists()
+    if existed:
+        shutil.rmtree(PROFILE_DIR, ignore_errors=True)
+    out({"ok": not PROFILE_DIR.exists(), "profile_dir": str(PROFILE_DIR), "removed": existed})
 
 
 # ---------------------------------------------------------------- inbox / discard
@@ -553,13 +697,14 @@ def main():
     p.add_argument("--url", default="", help="원문 주소. 파일 안에서 찾지 못할 때 지정")
     p = sub.add_parser("inbox"); p.add_argument("--root", required=True)
     p = sub.add_parser("discard"); p.add_argument("file")
+    sub.add_parser("clear-profile")
     p = sub.add_parser("place"); p.add_argument("--tmp", required=True); p.add_argument("--root", required=True); p.add_argument("--name", required=True)
     p = sub.add_parser("log"); p.add_argument("--root", required=True); p.add_argument("--url", required=True)
     p.add_argument("--result", required=True, choices=["성공", "실패", "갱신"]); p.add_argument("--reason", default="")
     p = sub.add_parser("retry-list"); p.add_argument("--root", required=True)
     a = ap.parse_args()
     {"check": cmd_check, "links": cmd_links, "find": cmd_find, "fetch": cmd_fetch, "fetch-file": cmd_fetch_file,
-     "inbox": cmd_inbox, "discard": cmd_discard, "place": cmd_place,
+     "inbox": cmd_inbox, "discard": cmd_discard, "clear-profile": cmd_clear_profile, "place": cmd_place,
      "log": cmd_log, "retry-list": cmd_retry_list}[a.cmd](a)
 
 
