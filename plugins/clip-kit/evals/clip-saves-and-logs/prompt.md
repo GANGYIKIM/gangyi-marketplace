@@ -1,5 +1,5 @@
 ---
-description: 실제 웹페이지를 클리핑해 clips/ 아래에 저장하고 clip-log.md에 성공으로 기록하는지 확인 (--scaffold, --allow-tools Bash Write, 인터넷과 패키지 필요)
+description: 링크 클리핑 요청에 link-clipper가 실행되고, 원문을 직접 쓰지 않고 clipper.py로 처리하려 하는지 확인 (--scaffold, --allow-tools Bash Write 필요. 평가 샌드박스에서는 패키지·네트워크를 쓸 수 없어 실제 저장은 tests/에서 확인)
 max_turns: 25
 allowed_tools: [Read, Glob, Grep, Skill, Bash, Write]
 ---
