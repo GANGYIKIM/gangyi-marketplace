@@ -4,8 +4,8 @@
 로컬 테스트 서버를 띄워 상황별로 clipper.py를 실행하고 결과 JSON을 확인한다.
 실제 웹사이트에 접속하지 않으므로 사용량이 들지 않고 결과가 매번 같다.
 
-    python3 tests/clip-kit/test_clipper.py        # 전체
-    python3 tests/clip-kit/test_clipper.py -v     # 케이스 이름까지 출력
+    python3 tests/test_clipper.py        # 전체 (clip-kit 플러그인 폴더에서)
+    python3 tests/test_clipper.py -v     # 케이스 이름까지 출력
 
 Chrome 창이 필요한 테스트는 Google Chrome이 없거나 화면을 띄울 수 없으면 건너뛴다.
 """
@@ -21,8 +21,8 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-CLIPPER = ROOT / "plugins" / "clip-kit" / "skills" / "link-clipper" / "scripts" / "clipper.py"
+PLUGIN = Path(__file__).resolve().parents[1]
+CLIPPER = PLUGIN / "skills" / "link-clipper" / "scripts" / "clipper.py"
 
 # 테스트에서는 대기 시간을 줄여 풀리지 않는 챌린지도 빨리 끝나게 한다.
 TEST_WAIT_MS = "6000"
