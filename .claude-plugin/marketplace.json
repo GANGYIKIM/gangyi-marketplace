@@ -15,6 +15,11 @@
       "name": "clip-kit",
       "source": "./plugins/clip-kit",
       "description": "웹 링크의 원문을 저장하고, 저장한 클립을 찾고 실패를 관리하는 스킬 모음"
+    },
+    {
+      "name": "git-kit",
+      "source": "./plugins/git-kit",
+      "description": "AI가 규칙대로 작업하며 git에 읽기 좋은 기록을 남기고, 사람은 PR에서 검토하도록 돕는 git 스킬 모음"
     }
   ]
 }

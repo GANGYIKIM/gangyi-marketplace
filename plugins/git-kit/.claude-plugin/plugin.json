@@ -1,0 +1,12 @@
+{
+  "name": "git-kit",
+  "description": "AI가 규칙대로 작업하며 git에 읽기 좋은 기록을 남기고, 사람은 PR에서 검토하도록 돕는 git 스킬 모음",
+  "author": {
+    "name": "GANGYIKIM",
+    "email": "gangyikim@gmail.com",
+    "url": "https://github.com/GANGYIKIM"
+  },
+  "homepage": "https://github.com/GANGYIKIM/gangyi-marketplace/tree/main/plugins/git-kit",
+  "repository": "https://github.com/GANGYIKIM/gangyi-marketplace",
+  "keywords": ["git", "commit", "pull-request", "korean"]
+}
