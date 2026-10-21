@@ -27,7 +27,6 @@ description: 웹 링크의 원문을 본문만 추린 HTML과 페이지 전체 �
 | `clipper fetch-file FILE --out TMPDIR [--url URL]` | 브라우저에서 저장한 HTML 파일로 같은 결과물을 만듦 |
 | `clipper inbox --root ROOT` | `ROOT/inbox/`의 HTML 파일과 파일별 원문 주소 나열 |
 | `clipper discard FILE` | 처리한 파일과 함께 저장된 `<이름>_files` 폴더 삭제 |
-| `clipper clear-profile` | Chrome 전용 프로필(쿠키) 삭제. 비상용 |
 | `clipper place --tmp TMPDIR --root ROOT --name NAME` | 임시 결과를 `ROOT/<이름>/`으로 옮기고, 같은 원문의 이전 클립은 `archive/`로 보관 |
 | `clipper log --root ROOT --url URL --result 성공\|실패\|갱신 [--reason 사유]` | clip-log.md에 한 줄 추가 |
 | `clipper retry-list --root ROOT` | 마지막 기록이 "재시도 가능" 실패인 링크 나열 |

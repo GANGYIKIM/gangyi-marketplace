@@ -199,13 +199,6 @@ class ClipperTest(unittest.TestCase):
         self.assertIn("first visit", first["text_preview"], first)
         self.assertIn("returning visitor", second["text_preview"], second)
 
-    def test_clear_profile(self):
-        self.profile.mkdir(parents=True, exist_ok=True)
-        (self.profile / "marker").write_text("x")
-        r = run_clipper("clear-profile", env_extra={"CLIPPER_PROFILE_DIR": str(self.profile)})
-        self.assertTrue(r["ok"] and r["removed"], r)
-        self.assertFalse(self.profile.exists())
-
     # ---------------------------------------------------------------- 저장한 HTML 파일
     def test_saved_file_with_canonical(self):
         f = self.work / "saved.html"

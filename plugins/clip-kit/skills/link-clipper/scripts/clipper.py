@@ -14,7 +14,6 @@
                                      브라우저에서 저장한 HTML 파일로 같은 결과물을 만든다
   inbox --root CLIPS                 <root>/inbox/의 HTML 파일과 파일별 원문 주소 나열
   discard FILE                       처리한 파일과 함께 저장된 <이름>_files 폴더를 지운다
-  clear-profile                      Chrome 전용 프로필(쿠키)을 지운다. 비상용
   place --tmp TMPDIR --root CLIPS --name NAME
                                      임시 결과를 <root>/<slug>/로 옮기고, 같은 원문의 이전 클립은 archive/로 보관
   log --root CLIPS --url URL --result 성공|실패|갱신 [--reason TEXT]
@@ -556,15 +555,6 @@ def cmd_fetch_file(a):
     out(result)
 
 
-# ---------------------------------------------------------------- clear-profile
-def cmd_clear_profile(_):
-    """비상용. 확인 화면이 계속 반복되거나 로그인 정보를 지우고 싶을 때만 쓴다. 평소에는 쌓아 두는 게 낫다."""
-    existed = PROFILE_DIR.exists()
-    if existed:
-        shutil.rmtree(PROFILE_DIR, ignore_errors=True)
-    out({"ok": not PROFILE_DIR.exists(), "profile_dir": str(PROFILE_DIR), "removed": existed})
-
-
 # ---------------------------------------------------------------- inbox / discard
 def cmd_inbox(a):
     box = Path(a.root) / "inbox"
@@ -697,14 +687,13 @@ def main():
     p.add_argument("--url", default="", help="원문 주소. 파일 안에서 찾지 못할 때 지정")
     p = sub.add_parser("inbox"); p.add_argument("--root", required=True)
     p = sub.add_parser("discard"); p.add_argument("file")
-    sub.add_parser("clear-profile")
     p = sub.add_parser("place"); p.add_argument("--tmp", required=True); p.add_argument("--root", required=True); p.add_argument("--name", required=True)
     p = sub.add_parser("log"); p.add_argument("--root", required=True); p.add_argument("--url", required=True)
     p.add_argument("--result", required=True, choices=["성공", "실패", "갱신"]); p.add_argument("--reason", default="")
     p = sub.add_parser("retry-list"); p.add_argument("--root", required=True)
     a = ap.parse_args()
     {"check": cmd_check, "links": cmd_links, "find": cmd_find, "fetch": cmd_fetch, "fetch-file": cmd_fetch_file,
-     "inbox": cmd_inbox, "discard": cmd_discard, "clear-profile": cmd_clear_profile, "place": cmd_place,
+     "inbox": cmd_inbox, "discard": cmd_discard, "place": cmd_place,
      "log": cmd_log, "retry-list": cmd_retry_list}[a.cmd](a)
 
 
