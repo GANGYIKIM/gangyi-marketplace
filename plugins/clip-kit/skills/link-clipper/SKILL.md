@@ -1,6 +1,6 @@
 ---
 name: link-clipper
-description: 웹 링크의 원문을 본문만 추린 HTML과 페이지 전체 캡처(PNG)로 저장하고, 결과를 clip-log.md에 기록한다. 브라우저에서 저장한 HTML 파일로도 같은 클립을 만든다. 사용자가 링크나 저장한 HTML 파일을 주며 "클리핑해줘", "이 링크 저장해줘", "스크랩해줘"라고 할 때, links.md나 inbox/에 모아 둔 것을 클리핑하려 할 때, clip-log의 실패한 링크를 재시도하려 할 때 사용한다. 저장을 마치면 note-kit의 summary-writer로 요약할지 묻는다. 브라우저와 파이썬 스크립트가 필요해 Claude Code에서 동작한다.
+description: 웹 링크의 원문을 본문만 추린 HTML과 페이지 전체 캡처(PNG)로 저장하고, 결과를 clip-log.md에 기록한다. 브라우저에서 저장한 HTML 파일로도 같은 클립을 만든다. 사용자가 링크나 저장한 HTML 파일을 주며 "클리핑해줘", "이 링크 저장해줘", "스크랩해줘"라고 할 때, links.md나 inbox/에 모아 둔 것을 클리핑하려 할 때, retry-clipper가 다시 시도할 링크를 넘겨줄 때 사용한다. 실패한 링크를 정리하거나 다시 시도하는 일은 retry-clipper가, 클립을 찾는 일은 finder가 맡는다. 저장을 마치면 note-kit의 summary-writer로 요약할지 묻는다. 브라우저와 파이썬 스크립트가 필요해 Claude Code에서 동작한다.
 ---
 
 # Link Clipper
@@ -29,7 +29,6 @@ description: 웹 링크의 원문을 본문만 추린 HTML과 페이지 전체 �
 | `clipper discard FILE` | 처리한 파일과 함께 저장된 `<이름>_files` 폴더 삭제 |
 | `clipper place --tmp TMPDIR --root ROOT --name NAME` | 임시 결과를 `ROOT/<이름>/`으로 옮기고, 같은 원문의 이전 클립은 `archive/`로 보관 |
 | `clipper log --root ROOT --url URL --result 성공\|실패\|갱신 [--reason 사유]` | clip-log.md에 한 줄 추가 |
-| `clipper retry-list --root ROOT` | 마지막 기록이 "재시도 가능" 실패인 링크 나열 |
 
 ## 진행 순서
 
@@ -65,7 +64,6 @@ description: 웹 링크의 원문을 본문만 추린 HTML과 페이지 전체 �
 - **ROOT의 `inbox/`에 HTML 파일이 있으면** 같은 방식으로 `clipper inbox --root ROOT`로 개수를 세고 "`inbox/`에 있는 N개 파일을 클리핑할까요?"라고 묻는다. `missing_url`에 있는 파일은 원문 주소를 모아서 한 번에 물어본다.
 - **받은 것도, `links.md`나 `inbox/`도 없으면**, 또는 처리하지 않겠다고 하면 클리핑할 링크나 파일을 물어본다.
 - **사용자가 링크 목록 파일을 지정하면** `clipper links FILE`로 링크를 뽑는다.
-- **재시도를 요청하면**("실패한 링크 다시 해줘") `clipper retry-list --root ROOT`의 링크를 처리한다.
 
 ### 3. 이미 있는 클립 확인
 

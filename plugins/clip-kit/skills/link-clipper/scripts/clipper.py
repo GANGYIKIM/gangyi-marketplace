@@ -16,9 +16,8 @@
   discard FILE                       처리한 파일과 함께 저장된 <이름>_files 폴더를 지운다
   place --tmp TMPDIR --root CLIPS --name NAME
                                      임시 결과를 <root>/<slug>/로 옮기고, 같은 원문의 이전 클립은 archive/로 보관
-  log --root CLIPS --url URL --result 성공|실패|갱신 [--reason TEXT]
+  log --root CLIPS --url URL --result 성공|실패|갱신|제외 [--reason TEXT]
                                      <root>/clip-log.md에 한 줄 추가
-  retry-list --root CLIPS            링크별 마지막 기록이 "재시도 가능" 실패인 링크 나열
 
 의존성: playwright(+ chromium), readability-lxml, lxml_html_clean. 권장: Google Chrome
 환경 변수(테스트용): CLIPPER_PROFILE_DIR, CLIPPER_CHALLENGE_WAIT_MS, CLIPPER_MANUAL_CHALLENGE_WAIT_MS
@@ -654,27 +653,6 @@ def cmd_log(a):
     out({"ok": True, "log": str(log)})
 
 
-def read_log_rows(root):
-    log = Path(root) / LOG_NAME
-    if not log.exists():
-        return []
-    rows = []
-    for line in log.read_text(encoding="utf-8").splitlines():
-        cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) >= 4 and cells[1].startswith("http"):
-            rows.append({"date": cells[0], "url": cells[1], "result": cells[2], "reason": cells[3]})
-    return rows
-
-
-def cmd_retry_list(a):
-    latest = {}
-    for r in read_log_rows(a.root):
-        latest[r["url"]] = r  # 표가 시간순이므로 마지막 줄이 최신 상태
-    urls = [u for u, r in latest.items() if r["result"] == "실패" and "재시도 가능" in r["reason"]]
-    out({"count": len(urls), "urls": urls,
-         "details": [{"url": u, "reason": latest[u]["reason"], "date": latest[u]["date"]} for u in urls]})
-
-
 def main():
     ap = argparse.ArgumentParser(description="link-clipper helper")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -689,12 +667,11 @@ def main():
     p = sub.add_parser("discard"); p.add_argument("file")
     p = sub.add_parser("place"); p.add_argument("--tmp", required=True); p.add_argument("--root", required=True); p.add_argument("--name", required=True)
     p = sub.add_parser("log"); p.add_argument("--root", required=True); p.add_argument("--url", required=True)
-    p.add_argument("--result", required=True, choices=["성공", "실패", "갱신"]); p.add_argument("--reason", default="")
-    p = sub.add_parser("retry-list"); p.add_argument("--root", required=True)
+    p.add_argument("--result", required=True, choices=["성공", "실패", "갱신", "제외"]); p.add_argument("--reason", default="")
     a = ap.parse_args()
     {"check": cmd_check, "links": cmd_links, "find": cmd_find, "fetch": cmd_fetch, "fetch-file": cmd_fetch_file,
      "inbox": cmd_inbox, "discard": cmd_discard, "place": cmd_place,
-     "log": cmd_log, "retry-list": cmd_retry_list}[a.cmd](a)
+     "log": cmd_log}[a.cmd](a)
 
 
 if __name__ == "__main__":
