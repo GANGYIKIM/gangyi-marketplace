@@ -1,5 +1,5 @@
 ---
-description: 결정이 필요한 변경을 새 브랜치로 떼어내고, 결정 대기 기록 파일을 남기고, 자동 모드라 대기 변경도 커밋하는지 확인 (--scaffold 필요)
+description: 결정이 필요한 변경을 새 브랜치로 떼어내고, 결정 대기 기록(git ref)을 남기고, 자동 모드라 대기 변경도 커밋하는지 확인 (--scaffold 필요)
 max_turns: 20
 allowed_tools: [Read, Glob, Grep, Skill, Bash]
 ---
