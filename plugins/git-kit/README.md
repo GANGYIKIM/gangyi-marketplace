@@ -41,6 +41,7 @@ protected-branches: [develop]  # main, master, 기본 브랜치 외에 보호할
 - 보고서는 `<!-- git-kit:report -->`로 시작하는 PR 첫 코멘트입니다. 다시 실행하면 새 코멘트를 달지 않고 이 코멘트를 고칩니다.
 - 결정 대기 브랜치의 PR은 제목이 🚧로 시작하고 항상 Draft로 만들어집니다. 보고서의 Decisions needed에서 선택지를 체크해 답합니다.
 - `--auto`로 만든 PR도 Draft입니다. Draft 해제는 사람이 합니다.
+- 아직 머지되지 않은 다른 PR의 브랜치 위에서 작업했다면, 그 브랜치를 base로 PR을 만듭니다. 갱신할 때 바뀐 내용이 없으면 PR을 고치지 않습니다.
 - force push는 하지 않습니다. 기본 브랜치보다 뒤처졌으면 확인 모드는 먼저 머지할지 묻고, 자동 모드는 보고서의 Please check에 적습니다.
 - PR 본문과 코멘트에도 서명 줄(`Generated with Claude Code` 등)을 붙이지 않습니다.
 
