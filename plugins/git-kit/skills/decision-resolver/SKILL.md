@@ -19,13 +19,15 @@ commit-writer가 떼어낸 결정 대기 변경의 결정을 사람에게서 받
 
 ## 공통 파일
 
-시작할 때 아래 파일을 읽는다.
+아래 파일을 "읽는 때"에 반드시 읽고 따른다. 내용을 안다고 여겨 건너뛰지 않는다.
 
-| 파일 | 이 스킬이 하는 일 |
-|---|---|
-| `${CLAUDE_PLUGIN_ROOT}/shared/decision-record.md` | 기록을 읽고, 답과 상태를 쓰고, 끝나면 지운다. 기록이 없으면 보고서로 다시 만든다 |
-| `${CLAUDE_PLUGIN_ROOT}/shared/report.md` | 보고서의 결정 부분(표시 안쪽)만 고친다 |
-| `${CLAUDE_PLUGIN_ROOT}/shared/commit-types.md` | 제목의 🚧를 type 이모지로 되돌린다 |
+| 파일 | 읽는 때 | 이 스킬이 하는 일 |
+|---|---|---|
+| `${CLAUDE_PLUGIN_ROOT}/shared/decision-record.md` | 시작할 때 | 기록을 읽고, 답과 상태를 쓰고, 끝나면 지운다. 기록이 없으면 보고서로 다시 만든다 |
+| `${CLAUDE_PLUGIN_ROOT}/shared/report.md` | PR이 있는 브랜치가 하나라도 있을 때, 답을 모으기 전에 | 보고서의 결정 부분(표시 안쪽)을 읽고 고친다 |
+| `${CLAUDE_PLUGIN_ROOT}/shared/commit-types.md` | 결정 대기가 끝나 제목을 바꾸기 직전에 | 제목의 🚧를 type 이모지로 되돌린다 |
+| `references/answers.md` | 답을 모을 때 | 답의 출처, 받는 조건, D마다 결과 |
+| `references/branch-states.md` | 정상 상태가 아닌 브랜치가 있을 때 | 브랜치 상태별 처리 |
 
 ## 안내 언어와 형식
 
@@ -68,7 +70,7 @@ commit-writer가 떼어낸 결정 대기 변경의 결정을 사람에게서 받
 
 ### 1. 준비
 
-1. 공통 파일을 읽는다.
+1. `decision-record.md`를 읽는다.
 2. **GitHub 연결 확인**: gh(`gh auth status` 성공)와 GitHub MCP 중 하나가 있어야 한다. 둘 다 없으면 기록과 PR을 바꾸지 않고 아래로 알린 뒤 끝낸다. PR이 있는지 알 수 없어 PR 없는 브랜치로 잘못 처리할 수 있기 때문이다.
    ```
    결정 처리 못함 · GitHub 연결 없음
@@ -81,13 +83,17 @@ commit-writer가 떼어낸 결정 대기 변경의 결정을 사람에게서 받
    - 그 밖 → 모든 결정 대기 브랜치
    - 모든 결정 대기 브랜치는 `git for-each-ref refs/git-kit/decisions/`의 브랜치와, 열린 PR 중 제목이 🚧로 시작하는 브랜치를 합친 것이다.
 5. **PR 조회**: 브랜치마다 PR을 한 번 읽는다. `gh pr view <브랜치> --json number,state,isDraft,title,baseRefName,url`
-6. **상태 판단**: 브랜치마다 `references/branch-states.md`로 처리할지 정한다.
+6. **상태 판단**: 브랜치마다 아래를 모두 만족하면 정상이다. 하나라도 아니거나 확실하지 않으면 `references/branch-states.md`를 읽고 그대로 처리한다.
+   - 결정 기록이 있고 새 형식으로 읽힌다.
+   - PR이 열려 있고 제목이 🚧로 시작하며 Draft다. 또는 PR이 없다.
+   - 로컬 브랜치와 원격 브랜치가 같다. 또는 원격 브랜치가 없다.
 7. **순서**: PR이 있는 브랜치를 PR 번호순으로, 쌓인 PR은 아래 PR을 먼저 둔다. PR이 없는 브랜치는 그 뒤에 브랜치 이름순으로 둔다.
 8. **기준 커밋**: 원격 브랜치가 있으면 `origin/<브랜치>`, 없으면(push 전) 로컬 브랜치를 기준으로 결정 시점과 반영 커밋을 본다.
+9. **보고서 형식**: 처리할 브랜치 중 PR이 있는 브랜치가 하나라도 있으면 `report.md`를 읽는다. 답을 모을 때 보고서의 결정 표시를 알아야 하기 때문이다.
 
 ### 2. 답 모으기
 
-브랜치마다 `references/answers.md`대로 답을 모은다.
+`references/answers.md`를 읽고, 브랜치마다 그대로 답을 모은다.
 
 - 출처: PR 보고서 체크박스, PR 코멘트, 대화
 - D마다 결과를 하나로 정한다: 답 있음, 답 충돌, 체크 여러 개, 사람 확인 필요, 대기
@@ -225,7 +231,7 @@ commit-writer가 떼어낸 결정 대기 변경의 결정을 사람에게서 받
 2. 기록의 D를 반영됨으로 바꾸고 반영 커밋을 쓴다.
 3. PR이 있으면 보고서 코멘트의 결정 부분을 `report.md`대로 고친다. 결정 대기가 끝났으면 "결정이 모두 끝났을 때" 템플릿으로 바꾼다.
 4. 결정 대기가 끝났으면:
-   - PR이 있으면 제목의 🚧를 `commit-types.md`에서 그 type의 이모지로 바꾼다. `gh pr edit <번호> --title "<새 제목>"`
+   - PR이 있으면 `commit-types.md`를 읽고, 제목의 🚧를 그 type의 이모지로 바꾼다. `gh pr edit <번호> --title "<새 제목>"`
    - 1번을 골랐으면 `gh pr ready <번호>`로 Draft를 해제한다. 2번을 골랐거나 자동 모드면 Draft를 유지하고, 보고서에 `Draft 유지` 줄을 쓴다.
    - 마지막에 기록을 지운다.
 5. 결정 대기가 계속되면 제목, Draft, 기록 삭제는 하지 않는다.
