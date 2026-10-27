@@ -110,15 +110,7 @@ PR에 올릴 커밋 전체(`origin/<base 브랜치>..HEAD`)를 기준으로 쓴�
 - **type**: 브랜치 전체의 주된 목적을 고른다. feat와 fix가 헷갈리면 fix를 쓴다. 결정 대기 PR이면 `references/decision-pending.md`를 따른다.
 - **description**: 영어, 명령형 현재 시제 동사로 시작하는 소문자, 마침표 없음. 이모지부터 끝까지 72자 이하로 쓴다. 어떤 파일을 고쳤는지가 아니라 무엇이 달라졌는지를 쓴다.
 
-| 이모지 | type | 쓰임 |
-|---|---|---|
-| ✨ | feat | 새 기능 추가 |
-| 🐛 | fix | 버그 수정 |
-| ♻️ | refactor | 동작 변화 없는 코드 구조 개선 |
-| 🎨 | style | 로직 없는 포맷·코드 스타일 변경 (CSS 스타일 변경은 제외) |
-| 📝 | docs | 문서 수정 |
-| ✅ | test | 기존 코드의 테스트 추가·수정 |
-| 🔧 | chore | 설정, 의존성, 빌드 같은 기타 작업 |
+type과 이모지는 `${CLAUDE_PLUGIN_ROOT}/shared/commit-types.md`를 읽고 따른다.
 
 #### 본문
 
