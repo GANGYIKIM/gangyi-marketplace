@@ -1,4 +1,4 @@
 ---
 type: regex
-pattern: '✨ feat: [a-z]'
+pattern: '제목:\n✨ feat: [a-z]'
 ---
