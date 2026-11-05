@@ -25,7 +25,7 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 - pr-writer는 표시 안쪽을 한 글자도 바꾸지 않고 그대로 옮긴다.
 - decision-resolver는 표시 바깥쪽을 바꾸지 않는다.
 - 결정 부분이 있으면 바깥쪽이 비어도 보고서를 "남은 항목 없음"으로 바꾸지 않는다.
-- 쌓인 PR의 머지 순서는 결정 부분에 쓰지 않는다. pr-writer가 Please check의 상태 항목으로 쓴다.
+- 쌓인 PR의 머지 순서는 아래 "머지 순서"를 따른다.
 
 ## 결정 부분 템플릿
 
@@ -37,6 +37,7 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 > [!WARNING]
 > 결정 대기. 머지 전 아래 Decisions needed의 결정 필요.
 > 답하는 법: 항목마다 선택지 하나 체크. 선택지에 없는 답은 PR 코멘트로 작성. 이후 Claude에게 결정 반영 요청.
+> 머지 순서: #<번호> → #<번호> (이 PR)
 
 ## Decisions needed
 ### D<번호>. <결정할 것>
@@ -64,7 +65,8 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 <!-- git-kit:decisions -->
 > [!NOTE]
 > 결정 완료 (<날짜>).
-> Draft 유지: <사람 판단 (<날짜>, <이유>)|자동 모드 (사람이 해제 필요)>
+> Draft 유지: <사람 판단 (<날짜>, <이유>)|자동 모드 (사람이 해제 필요)|아래 PR 머지 대기>
+> 머지 순서: #<번호> → #<번호> (이 PR)
 
 ## Decisions resolved
 ### D<번호>. <결정할 것>
@@ -89,11 +91,42 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
   - 체크박스가 아닌 곳에서 답했으면 `· 답한 곳: <곳>`을 붙인다.
 - 체크박스는 사람이 체크한 상태 그대로 둔다.
 - 모든 D가 끝나면 WARNING을 NOTE로, `Decisions needed`를 `Decisions resolved`로 바꾼다. D 블록은 `- 결정:` 줄과 선택지만 남기고 나머지 줄(미결정 이유, 현재 임시값, 의존, 관련 위치)은 뺀다.
-- `Draft 유지` 줄은 Draft를 유지했을 때만 쓴다. `(<이유>)`는 사람이 대화에서 이유를 말했을 때만 붙인다.
+- `Draft 유지` 줄은 Draft를 유지했을 때만 쓴다. `(<이유>)`는 사람이 대화에서 이유를 말했을 때만 붙인다. 아래 PR이 열려 있어 유지했으면 `아래 PR 머지 대기`를 쓴다.
+- `머지 순서` 줄은 아래 "머지 순서"를 따른다.
 - D 블록의 줄 내용(미결정 이유, 현재 임시값, 의존, 관련 위치, 선택지, 기록에 선택지가 없을 때)은 pr-writer의 `references/decision-pending.md` 규칙을 따른다.
 - Decisions made와 Please check는 pr-writer 규칙을 따른다.
+
+## 머지 순서
+
+쌓인 PR(base가 다른 열린 PR의 작업 브랜치인 PR)에 머지 순서를 남기는 규칙이다. 아래 PR의 브랜치를 지우지 않으면 GitHub이 위 PR의 base를 바꾸지 않아서, 순서대로 머지해도 위 PR이 기본 브랜치가 아니라 아래 브랜치로 들어갈 수 있기 때문이다.
+
+### 언제 쓰나
+
+PR의 base가 열린 PR의 작업 브랜치일 때만 쓴다. 아니면 쓰지 않고, 이미 있으면 뺀다.
+
+### 순서 만들기
+
+- base 브랜치의 열린 PR에서 출발해, 그 PR의 base 브랜치의 열린 PR을 차례로 따라간다. 열린 PR의 작업 브랜치가 아닌 브랜치(기본 브랜치, 머지된 PR의 브랜치 등)가 나오면 멈춘다.
+- 아래 PR부터 쓰고, 이 PR은 맨 끝에 `#<번호> (이 PR)`로 쓴다. 이 PR의 번호를 모르면(링크 안내) `이 PR`로 쓴다.
+- 찾는 법: `gh pr list --head <브랜치> --state open --json number,baseRefName`
+
+### 어디에, 누가
+
+| PR | 위치와 형식 | 처음 쓰기 | 그 뒤 고치기 |
+|---|---|---|---|
+| 결정 대기 PR | 결정 부분의 WARNING이나 NOTE 안: `> 머지 순서: #4 → #5 → #6 (이 PR)` | pr-writer | decision-resolver가 실행할 때마다 다시 계산 |
+| 일반 쌓인 PR | Please check 상태 항목: `- [ ] 머지 순서: #4 → #5 → #6 (이 PR). #5 머지 후 base를 <기본 브랜치>로 변경` | pr-writer | pr-writer가 갱신할 때마다 다시 계산 |
+
+- 결정 대기 PR은 순서만 쓴다. Draft라서 순서를 잘못 알아도 머지되지 않고, 아래 PR이 머지된 뒤의 base 변경과 Draft 해제는 decision-resolver가 한다. base를 바꾸는 쪽이 안내도 고쳐야 낡지 않아서, 결정 부분에 두고 decision-resolver가 고친다.
+- 일반 쌓인 PR은 할 일까지 쓴다. Draft가 아니라서 순서만 따르면 아래 브랜치로 들어간다. `#5`는 바로 아래 PR이다. pr-writer는 저장소에 base를 바꿔 주는 설정(브랜치 자동 삭제, Actions)이 있는지 모르므로 항상 쓴다.
 
 ## 표시가 깨졌을 때
 
 - 결정 표시가 한쪽만 있거나 순서가 뒤집혔으면 두 스킬 모두 보고서를 고치지 않고 알린다.
-- 결정 대기 PR인데 결정 표시가 없는 예전 보고서는 decision-resolver가 처음 고칠 때 `> [!WARNING]`부터 `## Decisions needed`의 마지막 D 블록까지를 표시로 감싼다. pr-writer는 이런 보고서를 만나면 결정 부분을 고치지 않고 그대로 옮긴다.
+
+## 예전 보고서
+
+예전 pr-writer가 만든 보고서를 만났을 때다. pr-writer는 어느 경우든 결정 부분을 고치지 않고 그대로 옮긴다.
+
+- 결정 표시가 없음: decision-resolver가 처음 고칠 때 `> [!WARNING]`부터 `## Decisions needed`의 마지막 D 블록까지를 표시로 감싼다.
+- WARNING에 `> #<번호> 먼저 머지 필요.` 줄이 있음: decision-resolver가 처음 고칠 때 그 줄을 지우고, 필요하면 "머지 순서"대로 `머지 순서` 줄을 쓴다.
