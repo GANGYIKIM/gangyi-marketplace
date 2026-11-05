@@ -114,10 +114,11 @@ PR의 base가 열린 PR의 작업 브랜치일 때만 쓴다. 아니면 쓰지 �
 
 | PR | 위치와 형식 | 처음 쓰기 | 그 뒤 고치기 |
 |---|---|---|---|
-| 결정 대기 PR | 결정 부분의 WARNING이나 NOTE 안: `> 머지 순서: #4 → #5 → #6 (이 PR)` | pr-writer | decision-resolver가 실행할 때마다 다시 계산 |
-| 일반 쌓인 PR | Please check 상태 항목: `- [ ] 머지 순서: #4 → #5 → #6 (이 PR). #5 머지 후 base를 <기본 브랜치>로 변경` | pr-writer | pr-writer가 갱신할 때마다 다시 계산 |
+| 결정 부분이 있는 PR (결정 대기 중이거나, 결정이 끝나 아래 PR 머지를 기다리는 PR) | 결정 부분의 WARNING이나 NOTE 안: `> 머지 순서: #4 → #5 → #6 (이 PR)` | pr-writer | decision-resolver가 2단계(결정 마무리)를 할 때 다시 계산 |
+| 일반 쌓인 PR (결정 부분이 없는 PR) | Please check 상태 항목: `- [ ] 머지 순서: #4 → #5 → #6 (이 PR). #5 머지 후 base를 <기본 브랜치>로 변경` | pr-writer | pr-writer가 갱신할 때마다 다시 계산 |
 
-- 결정 대기 PR은 순서만 쓴다. Draft라서 순서를 잘못 알아도 머지되지 않고, 아래 PR이 머지된 뒤의 base 변경과 Draft 해제는 decision-resolver가 한다. base를 바꾸는 쪽이 안내도 고쳐야 낡지 않아서, 결정 부분에 두고 decision-resolver가 고친다.
+- 한 PR에는 둘 중 하나만 쓴다. 결정 부분이 있으면 Please check에는 쓰지 않는다.
+- 결정 부분이 있는 PR은 순서만 쓴다. Draft라서 순서를 잘못 알아도 머지되지 않고, 아래 PR이 머지된 뒤의 base 변경과 Draft 해제는 decision-resolver가 한다. base를 바꾸는 쪽이 안내도 고쳐야 낡지 않아서, 결정 부분에 두고 decision-resolver가 고친다.
 - 일반 쌓인 PR은 할 일까지 쓴다. Draft가 아니라서 순서만 따르면 아래 브랜치로 들어간다. `#5`는 바로 아래 PR이다. pr-writer는 저장소에 base를 바꿔 주는 설정(브랜치 자동 삭제, Actions)이 있는지 모르므로 항상 쓴다.
 
 ## 표시가 깨졌을 때
