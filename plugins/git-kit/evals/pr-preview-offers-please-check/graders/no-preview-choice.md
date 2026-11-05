@@ -1,5 +1,5 @@
 ---
 type: regex
-pattern: 'PR 생성 중단'
+pattern: '\n\d\. 미리 보기'
 match: not_contains
 ---
