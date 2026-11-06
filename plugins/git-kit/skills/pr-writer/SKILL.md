@@ -76,7 +76,7 @@ AI가 규칙대로 작업하며 git에 남긴 기록을 사람이 PR에서 검�
 8. **쌓인 브랜치**: 새 PR이면, 현재 브랜치가 아직 머지되지 않은 다른 열린 PR의 브랜치 위에 쌓였는지 확인한다.
    - `gh pr list --state open --json number,headRefName`으로 열린 PR을 찾고, 각 브랜치에 대해 `git merge-base --is-ancestor origin/<그 브랜치> HEAD`가 성공하는지 본다.
    - 해당하는 PR이 있으면 base를 그 PR의 브랜치로 둔다. 여러 개면 현재 브랜치에 가장 가까운(커밋이 가장 많이 쌓인) 것을 고른다.
-   - 결정 대기 PR이면 이 단계 대신 `references/decision-pending.md`의 base 규칙을 따른다. gh와 GitHub MCP가 모두 없으면 건너뛴다.
+   - 결정 대기 PR이면 이 단계 대신 `references/decision-pending.md`를 읽고 그 base 규칙을 따른다. gh와 GitHub MCP가 모두 없으면 건너뛴다.
    - base가 기본 브랜치가 아니게 되면, 올릴 커밋(5단계)과 뒤처진 커밋 수(4단계)를 base 브랜치 기준으로 다시 센다. 기본 브랜치를 따라잡는 일은 아래에 있는 PR이 할 일이므로, 기본 브랜치 기준 뒤처짐은 알리지 않는다.
 9. **참조 파일**
    - `refs/git-kit/decisions/<현재 브랜치>`가 있으면 `references/decision-pending.md`를 읽는다.

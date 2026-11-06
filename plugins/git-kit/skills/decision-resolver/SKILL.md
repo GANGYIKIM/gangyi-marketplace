@@ -84,7 +84,7 @@ commit-writer가 떼어낸 결정 대기 변경의 결정을 사람에게서 받
    - 지금 브랜치에 기록(`refs/git-kit/decisions/<브랜치>`)이 있거나, 지금 브랜치 PR의 제목이 🚧로 시작하면 → 지금 브랜치만
    - 그 밖 → 모든 결정 대기 브랜치
    - 모든 결정 대기 브랜치는 `git for-each-ref refs/git-kit/decisions/`의 브랜치와, 열린 PR 중 제목이 🚧로 시작하는 브랜치를 합친 것이다.
-   - 여기에 아래 PR 머지를 기다리는 브랜치를 더한다. 열린 Draft PR(`gh pr list --draft --state open`) 중 보고서 결정 부분의 `Draft 유지:` 줄이 `아래 PR 머지 대기`인 브랜치다. 결정은 끝났고 base 변경과 Draft 해제만 남은 경우라 `references/branch-states.md` 20번으로 처리한다.
+   - 여기에 아래 PR 머지를 기다리는 브랜치를 더한다. 열린 Draft PR(`gh pr list --draft --state open`) 중 보고서 결정 부분의 `Draft 유지:` 줄이 `아래 PR 머지 대기`인 브랜치다. 결정 부분은 `report.md`의 표시로 찾으므로, 열린 Draft PR이 있으면 이때 `report.md`를 읽는다. 결정은 끝났고 base 변경과 Draft 해제만 남은 경우라 `references/branch-states.md` 20번으로 처리한다.
 5. **PR 조회**: 브랜치마다 PR을 한 번 읽는다. `gh pr view <브랜치> --json number,state,isDraft,title,baseRefName,url`
 6. **상태 판단**: 브랜치마다 아래를 모두 만족하면 정상이다. 하나라도 아니거나 확실하지 않으면 `references/branch-states.md`를 읽고 그대로 처리한다.
    - 결정 기록이 있고 새 형식으로 읽힌다.
