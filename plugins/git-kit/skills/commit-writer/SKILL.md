@@ -98,7 +98,7 @@ AI가 규칙대로 작업하며 git에 읽기 좋은 기록을 남기고, 사람
   - 나쁨: `feat/login`, `fix/button`, `refactor/utils`, `feat/update-auth-tsx`
   - 좋음: `feat/login-email-validation`, `fix/submit-button-double-click`, `refactor/extract-form-error-utils`
 - **이슈 번호**: 넣지 않는다.
-- **결정 대기 브랜치**: 이름에 대기 표시를 넣지 않는다. 대기 상태는 PR 제목의 🚧와 본문의 WARNING이, 쌓인 위치는 PR의 base가 보여준다.
+- **결정 대기 브랜치**: 이름에 대기 표시를 넣지 않는다. 대기 상태는 PR 제목의 🚧와 보고서 코멘트의 WARNING이, 쌓인 위치는 PR의 base가 보여준다.
 - **이름이 겹칠 때**: 끝에 `-2`, `-3`처럼 번호를 붙인다. 기존 브랜치로 옮겨가지 않는다.
 
 ### 2. 변경 분할

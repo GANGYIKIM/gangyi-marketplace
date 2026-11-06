@@ -1,7 +1,7 @@
 # 결정 기록
 
 결정 대기 브랜치의 결정을 git ref에 남기는 형식이다.
-commit-writer, pr-writer, decision-resolver, branch-cleaner가 읽는다.
+commit-writer, pr-writer, decision-resolver가 읽는다.
 
 ## 스킬별 역할
 
@@ -10,7 +10,6 @@ commit-writer, pr-writer, decision-resolver, branch-cleaner가 읽는다.
 | commit-writer | 새로 쓴다. D 블록과 결정 의존을 쓴다. 상태는 대기. |
 | pr-writer | 읽어서 PR 보고서로 옮긴다. 기록은 바꾸지 않는다. |
 | decision-resolver | 답과 상태를 쓴다. 보고서로 기록을 다시 만든다. 모두 끝나면 지운다. |
-| branch-cleaner | 브랜치가 사라진 기록을 지운다. |
 
 ## 위치와 다루는 법
 
