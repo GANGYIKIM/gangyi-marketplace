@@ -65,7 +65,7 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 <!-- git-kit:decisions -->
 > [!NOTE]
 > 결정 완료 (<날짜>).
-> Draft 유지: <사람 판단 (<날짜>, <이유>)|자동 모드 (사람이 해제 필요)|아래 PR 머지 대기>
+> Draft 유지: <사람 판단 (<날짜>)|자동 모드 (사람이 해제 필요)|아래 PR 머지 대기>
 > 머지 순서: #<번호> → #<번호> (이 PR)
 
 ## Decisions resolved
@@ -91,7 +91,7 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
   - 체크박스가 아닌 곳에서 답했으면 `· 답한 곳: <곳>`을 붙인다.
 - 체크박스는 사람이 체크한 상태 그대로 둔다.
 - 모든 D가 끝나면 WARNING을 NOTE로, `Decisions needed`를 `Decisions resolved`로 바꾼다. D 블록은 `- 결정:` 줄과 선택지만 남기고 나머지 줄(미결정 이유, 현재 임시값, 의존, 관련 위치)은 뺀다.
-- `Draft 유지` 줄은 Draft를 유지했을 때만 쓴다. `(<이유>)`는 사람이 대화에서 이유를 말했을 때만 붙인다. 아래 PR이 열려 있어 유지했으면 `아래 PR 머지 대기`를 쓴다.
+- `Draft 유지` 줄은 Draft를 유지했을 때만 쓴다. `사람 판단`은 사람이 대화에서 이유를 말했을 때만 `사람 판단 (<날짜>, <이유>)`로 쓴다. 아래 PR이 열려 있어 유지했으면 `아래 PR 머지 대기`를 쓴다.
 - `머지 순서` 줄은 아래 "머지 순서"를 따른다.
 - D 블록의 줄 내용(미결정 이유, 현재 임시값, 의존, 관련 위치, 선택지, 기록에 선택지가 없을 때)은 pr-writer의 `references/decision-pending.md` 규칙을 따른다.
 - Decisions made와 Please check는 pr-writer 규칙을 따른다.
