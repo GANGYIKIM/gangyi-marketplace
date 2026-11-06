@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: auto-continues-remaining-task
+tags: [fixture]
+context:
+  scaffold_script: fixture.sh
