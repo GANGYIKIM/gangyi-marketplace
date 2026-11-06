@@ -22,7 +22,7 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 | 결정 부분 (표시 안쪽) | pr-writer가 결정 기록으로 만든다 | decision-resolver만 |
 | Decisions made, Please check, Status (표시 바깥쪽) | pr-writer | pr-writer만 |
 
-- pr-writer는 표시 안쪽을 한 글자도 바꾸지 않고 그대로 옮긴다.
+- pr-writer는 표시 안쪽을 한 글자도 바꾸지 않고 그대로 옮긴다. 단, 결정 부분이 WARNING이고 기록에 결정 부분에 없는 D가 있으면 그 D 블록만 끝에 더한다(pr-writer `references/decision-pending.md`의 "새 D 더하기").
 - decision-resolver는 표시 바깥쪽을 바꾸지 않는다.
 - 결정 부분이 있으면 바깥쪽이 비어도 보고서를 "남은 항목 없음"으로 바꾸지 않는다.
 - 쌓인 PR의 머지 순서는 아래 "머지 순서"를 따른다.
