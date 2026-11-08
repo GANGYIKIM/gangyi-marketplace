@@ -17,8 +17,8 @@ CLAUDE.md, CONTRIBUTING.md 같은 저장소 지침에 PR 규칙이 있으면 함
 
 - 템플릿의 섹션 제목, 순서, 고정 문구, 안내용 HTML 주석(`<!-- … -->`)은 바꾸지 않는다.
 - 각 섹션에는 그 섹션이 요구하는 내용을 쓴다. 저장소 지침이 언어를 정하지 않았으면 내용은 한국어 개조식으로 쓴다.
-- Summary 내용만 같은 역할의 템플릿 섹션에 넣는다. 예: "변경 사항", "What", "Description". Changes(커밋 목록)는 넣지 않는다. 커밋은 PR의 Commits 탭에서 볼 수 있다.
-- 같은 역할의 섹션이 없으면 템플릿 섹션들 뒤에 SKILL.md의 `## Summary`, `## Changes`를 덧붙인다. 템플릿이나 지침이 섹션 추가를 금지하면 덧붙이지 않는다.
+- Summary와 Testing 내용만 같은 역할의 템플릿 섹션에 넣는다. Summary 예: "변경 사항", "What", "Description". Testing 예: "테스트", "How has this been tested?". Changes(커밋 목록)는 넣지 않는다. 커밋은 PR의 Commits 탭에서 볼 수 있다.
+- Summary와 같은 역할의 섹션이 없으면 템플릿 섹션들 뒤에 SKILL.md의 `## Summary`, `## Changes`를 덧붙인다. Testing과 같은 역할의 섹션이 없으면 `## Testing`을 맨 뒤에 덧붙인다. 템플릿이나 지침이 섹션 추가를 금지하면 덧붙이지 않는다.
 - 근거가 없어 채울 수 없는 섹션(예: 스크린샷)은 비워 두고, 보고서 코멘트의 Status에 "<섹션 이름> 섹션 비어 있음"을 적는다.
 
 ## 체크리스트
