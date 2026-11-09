@@ -1,0 +1,12 @@
+{
+  "repo": "test/demo",
+  "user": "eval",
+  "defaultBranch": "main",
+  "pulls": [
+    {"number": 1, "title": "✨ feat: count failed login attempts", "state": "MERGED", "isDraft": false, "baseRefName": "main", "headRefName": "feat/count-login-failures", "mergedAt": "2026-10-23T09:00:00Z"},
+    {"number": 2, "title": "✨ feat: add account lockout after failed logins", "state": "OPEN", "isDraft": true, "baseRefName": "feat/count-login-failures", "headRefName": "feat/account-lockout"}
+  ],
+  "comments": [
+    {"id": 101, "issue": 2, "body_file": "report.md", "user": "eval", "author_association": "OWNER", "created_at": "2026-10-21T01:00:00Z"}
+  ]
+}
