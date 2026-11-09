@@ -1,6 +1,6 @@
 # gh-evals
 
-GitHub이 필요한 git-kit 시나리오를 진짜 `gh`와 가짜 GitHub으로 돌리는 테스트다. 지금은 decision-resolver 케이스만 있다.
+GitHub이 필요한 git-kit 시나리오를 진짜 `gh`와 가짜 GitHub으로 돌리는 테스트다.
 
 ## 왜 `evals/`와 따로 있나
 
@@ -12,12 +12,8 @@ GitHub이 필요한 git-kit 시나리오를 진짜 `gh`와 가짜 GitHub으로 �
 
 - **진짜 gh, 가짜 GitHub**: gh 설정의 `http_unix_socket`으로 gh의 모든 HTTP 요청을 로컬 소켓으로 보낸다. 그 소켓에서 `lib/fake_github.py`가 받는다.
   - gh는 진짜라서 플래그, `--json`/`--jq`, 출력 형식, 오류 메시지가 실제와 같다. 가짜인 것은 GitHub의 데이터뿐이다.
-  - 서버는 PR과 코멘트를 JSON 파일 하나에 두고, gh가 보내는 REST와 GraphQL 요청에 답하며, 받은 요청을 모두 기록한다.
-  - GraphQL은 질의가 고른 필드만 돌려준다(`lib/gql.py`). gh는 일부 응답을 엄격하게 읽어서, 고르지 않은 필드가 섞이면 오류를 내기 때문이다.
 - **진짜 GitHub에는 나가지 않는다**: 실행마다 가짜 토큰을 넣은 별도 gh 설정(`GH_CONFIG_DIR`)을 쓰고, `GH_TOKEN` 같은 토큰 환경 변수는 뺀다.
 - **git 원격**: 원격 주소는 `git@github.com:test/demo.git`이다. gh가 GitHub 저장소로 알아보게 하기 위해서다. push와 fetch는 `lib/fake_ssh.sh`가 ssh 대신 로컬 bare 저장소로 이어 준다.
-- **여러 턴**: 확인 모드처럼 답이 필요한 흐름은 `claude -p --resume`으로 같은 세션을 이어 간다.
-- **불린 플러그인 확인**: 실행 기록에서 실제로 불린 git-kit이 `--plugin-dir`과 다르면 그 실행을 오류로 처리한다. 설치된 예전 버전이 대신 불리는 일을 막기 위해서다.
 
 ## 실행
 
@@ -34,17 +30,14 @@ python3 run.py --runs 3 -j 5                # 케이스마다 3회, 5개씩 동�
 | `--runs` | 케이스마다 실행 횟수 | 1 |
 | `-j` | 동시에 돌릴 실행 수 | 1 |
 | `--model` | `claude -p`에 넘길 모델 | 설정의 기본 모델 |
-| `--plugin-dir` | 시험할 git-kit 폴더 | 이 폴더의 상위(`plugins/git-kit`) |
+| `--plugin-dir` | 시험할 git-kit 폴더. 실제로 불린 git-kit이 이 폴더와 다르면 그 실행은 오류로 처리한다. 설치된 예전 버전이 대신 불리는 일을 막기 위해서다 | 이 폴더의 상위(`plugins/git-kit`) |
 | `--keep` | 실행마다 만든 임시 폴더를 지우지 않음 | 지움 |
 
-- 필요한 것: `python3`(표준 라이브러리만 씀), `git`, `gh`, `claude`. macOS와 Linux에서 돈다.
 - 결과는 `results/<시각>/<케이스>/run-<n>/`에 남는다. git에 올리지 않는다.
   - `last_message.txt`, `messages.txt`: 스킬의 응답
   - `github.txt`, `calls.txt`: 끝났을 때의 가짜 GitHub 상태와 받은 요청
   - `record.txt`: 끝났을 때의 결정 기록
   - `trace-<턴>.jsonl`: `claude -p`의 실행 기록
-- 비용은 실행 1회에 대략 $0.4~1.2다. 두 턴짜리 케이스가 더 든다.
-- 몇 번 돌릴지는 `evals/`와 같은 기준을 따른다. TESTING.md를 본다.
 
 ## 케이스 쓰는 법
 
@@ -52,8 +45,8 @@ python3 run.py --runs 3 -j 5                # 케이스마다 3회, 5개씩 동�
 
 | 파일 | 내용 |
 |---|---|
-| `prompt.md` | frontmatter(`description`, `timeout_seconds`, `max_turns`, `allowed_tools`, `allow`)와 프롬프트. 턴은 `<!-- next turn -->` 줄로 나눈다 |
-| `fixture.sh` | 저장소를 만든다. `source "$GK_LIB/setup.sh"`로 도우미를 쓴다. 커밋 시각이 고정돼 해시가 실행마다 같다 |
+| `prompt.md` | frontmatter(`description`, `timeout_seconds`, `max_turns`, `allowed_tools`, `allow`)와 프롬프트. 턴은 `<!-- next turn -->` 줄로 나누고, 다음 턴은 같은 세션을 이어 간다 |
+| `fixture.sh` | 저장소를 만든다. `source "$GK_LIB/setup.sh"`로 도우미를 쓴다 |
 | `github.json` | 가짜 GitHub의 처음 상태. 형식은 `lib/fake_github.py` 맨 위에 있다. 코멘트는 `body_file`로 파일을 가리킬 수 있다 |
 | `graders/*.md` | 채점 하나에 파일 하나. frontmatter만 쓴다 |
 
