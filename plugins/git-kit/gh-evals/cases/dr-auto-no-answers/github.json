@@ -1,0 +1,11 @@
+{
+  "repo": "test/demo",
+  "user": "eval",
+  "defaultBranch": "main",
+  "pulls": [
+    {"number": 1, "title": "🚧 feat: add account lockout after failed logins", "state": "OPEN", "isDraft": true, "baseRefName": "main", "headRefName": "feat/account-lockout"}
+  ],
+  "comments": [
+    {"id": 101, "issue": 1, "body_file": "report.md", "user": "eval", "author_association": "OWNER", "created_at": "2026-10-21T01:00:00Z"}
+  ]
+}

@@ -1,5 +1,7 @@
 # claude plugin eval 실행 결과
 plugins/*/evals/results/
+# gh-evals 실행 결과
+plugins/*/gh-evals/results/
 **/.DS_Store
 
 .local/
