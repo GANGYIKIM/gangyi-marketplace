@@ -8,6 +8,7 @@ AI가 규칙대로 작업하며 git에 읽기 좋은 기록을 남기고, 사람
 |---|---|---|
 | commit-writer | 변경사항을 주제별 커밋으로 나누고, Gitmoji와 Conventional Commits 타입을 붙인 영어 한 줄 메시지로 커밋합니다. 기본은 커밋마다 확인하고, `--auto`면 확인 없이 진행합니다 | `/git-kit:commit-writer` 또는 "커밋해줘" |
 | pr-writer | 브랜치의 커밋 전체로 PR 제목과 본문을 쓰고, AI가 판단한 것과 사람이 확인할 것을 PR 첫 코멘트에 보고서로 남깁니다. 기본은 push 전에 한 번 확인하고, `--auto`면 확인 없이 push하고 Draft PR로 만듭니다 | `/git-kit:pr-writer` 또는 "PR 만들어줘" |
+| decision-resolver | 결정 대기 PR(🚧)의 답을 PR 체크박스, PR 코멘트, 대화에서 모아 확정하고, 결정이 코드에 반영되면 PR 보고서와 제목을 고쳐 결정 대기를 끝냅니다. 기본은 브랜치마다 확인하고, `--auto`면 확인 없이 진행하되 Draft는 풀지 않습니다 | `/git-kit:decision-resolver` 또는 "결정 반영해줘" |
 
 ## 설치
 
@@ -42,7 +43,7 @@ protected-branches: [develop]  # main, master, 기본 브랜치 외에 보호할
 - 결정 대기 브랜치의 PR은 제목이 🚧로 시작하고 항상 Draft로 만들어집니다. 보고서의 Decisions needed에서 선택지를 체크해 답합니다.
 - `--auto`로 만든 PR도 Draft입니다. Draft 해제는 사람이 합니다.
 - 아직 머지되지 않은 다른 PR의 브랜치 위에서 작업했다면, 그 브랜치를 base로 PR을 만듭니다. 갱신할 때 바뀐 내용이 없으면 PR을 고치지 않습니다.
-- force push는 하지 않습니다. 기본 브랜치보다 뒤처졌으면 확인 모드는 먼저 머지할지 묻고, 자동 모드는 보고서의 Please check에 적습니다.
+- force push는 하지 않습니다. 기본 브랜치보다 뒤처졌으면 확인 모드는 먼저 머지할지 묻고, 자동 모드는 보고서의 Status에 적습니다.
 - PR 본문과 코멘트에도 서명 줄(`Generated with Claude Code` 등)을 붙이지 않습니다.
 
 ## 테스트

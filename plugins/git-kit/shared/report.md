@@ -20,9 +20,9 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 | 부분 | 처음 만들기 | 그 뒤 고치기 |
 |---|---|---|
 | 결정 부분 (표시 안쪽) | pr-writer가 결정 기록으로 만든다 | decision-resolver만 |
-| Decisions made, Please check (표시 바깥쪽) | pr-writer | pr-writer만 |
+| Decisions made, Please check, Status (표시 바깥쪽) | pr-writer | pr-writer만 |
 
-- pr-writer는 표시 안쪽을 한 글자도 바꾸지 않고 그대로 옮긴다.
+- pr-writer는 표시 안쪽을 한 글자도 바꾸지 않고 그대로 옮긴다. 단, 결정 부분이 WARNING이고 기록에 결정 부분에 없는 D가 있으면 그 D 블록만 끝에 더한다(pr-writer `references/decision-pending.md`의 "새 D 더하기").
 - decision-resolver는 표시 바깥쪽을 바꾸지 않는다.
 - 결정 부분이 있으면 바깥쪽이 비어도 보고서를 "남은 항목 없음"으로 바꾸지 않는다.
 - 쌓인 PR의 머지 순서는 아래 "머지 순서"를 따른다.
@@ -56,6 +56,9 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 
 ## Please check
 …
+
+## Status
+…
 ```
 
 ### 결정이 모두 끝났을 때
@@ -65,7 +68,7 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 <!-- git-kit:decisions -->
 > [!NOTE]
 > 결정 완료 (<날짜>).
-> Draft 유지: <사람 판단 (<날짜>, <이유>)|자동 모드 (사람이 해제 필요)|아래 PR 머지 대기>
+> Draft 유지: <사람 판단 (<날짜>)|자동 모드 (사람이 해제 필요)|아래 PR 머지 대기>
 > 머지 순서: #<번호> → #<번호> (이 PR)
 
 ## Decisions resolved
@@ -80,6 +83,9 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 
 ## Please check
 …
+
+## Status
+…
 ```
 
 ### 규칙
@@ -89,12 +95,12 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
   - 반영됨: `· 반영 커밋 …`을 붙인다. 여러 개면 쉼표로 잇는다.
   - 필요 없음: `- 결정: 필요 없음 (D<번호>가 <답>)`
   - 체크박스가 아닌 곳에서 답했으면 `· 답한 곳: <곳>`을 붙인다.
-- 체크박스는 사람이 체크한 상태 그대로 둔다.
+- 체크박스는 사람이 체크한 상태 그대로 둔다. 단, decision-resolver가 확정한 답이 체크와 다르면 확정한 답으로 맞춘다(decision-resolver 1단계 "확정할 때").
 - 모든 D가 끝나면 WARNING을 NOTE로, `Decisions needed`를 `Decisions resolved`로 바꾼다. D 블록은 `- 결정:` 줄과 선택지만 남기고 나머지 줄(미결정 이유, 현재 임시값, 의존, 관련 위치)은 뺀다.
-- `Draft 유지` 줄은 Draft를 유지했을 때만 쓴다. `(<이유>)`는 사람이 대화에서 이유를 말했을 때만 붙인다. 아래 PR이 열려 있어 유지했으면 `아래 PR 머지 대기`를 쓴다.
+- `Draft 유지` 줄은 Draft를 유지했을 때만 쓴다. `사람 판단`은 사람이 대화에서 이유를 말했을 때만 `사람 판단 (<날짜>, <이유>)`로 쓴다. 아래 PR이 열려 있어 유지했으면 `아래 PR 머지 대기`를 쓴다.
 - `머지 순서` 줄은 아래 "머지 순서"를 따른다.
 - D 블록의 줄 내용(미결정 이유, 현재 임시값, 의존, 관련 위치, 선택지, 기록에 선택지가 없을 때)은 pr-writer의 `references/decision-pending.md` 규칙을 따른다.
-- Decisions made와 Please check는 pr-writer 규칙을 따른다.
+- Decisions made, Please check, Status는 pr-writer 규칙을 따른다.
 
 ## 머지 순서
 
@@ -120,9 +126,9 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 | PR | 위치와 형식 | 처음 쓰기 | 그 뒤 고치기 |
 |---|---|---|---|
 | 결정 부분이 있는 PR (결정 대기 중이거나, 결정이 끝나 아래 PR 머지를 기다리는 PR) | 결정 부분의 WARNING이나 NOTE 안: `> 머지 순서: #4 → #5 → #6 (이 PR)` | pr-writer | decision-resolver가 2단계(결정 마무리)를 할 때 다시 계산 |
-| 일반 쌓인 PR (결정 부분이 없는 PR) | Please check 상태 항목. 머지 순서 항목: `- [ ] 머지 순서: #4 → #5 → #6 (이 PR). #5 머지 후 base를 <기본 브랜치> 브랜치로 변경`. base 변경 항목: `- [ ] base를 <새 base> 브랜치로 변경 필요 (#5 머지됨). 바꾸기 전에 머지하면 <새 base> 브랜치에 안 들어감` | pr-writer | pr-writer가 갱신할 때마다 다시 계산 |
+| 일반 쌓인 PR (결정 부분이 없는 PR) | Status 항목. 머지 순서 항목: `- 머지 순서: #4 → #5 → #6 (이 PR). #5 머지 후 base를 <기본 브랜치> 브랜치로 변경`. base 변경 항목: `- base를 <새 base> 브랜치로 변경 필요 (#5 머지됨). 바꾸기 전에 머지하면 <새 base> 브랜치에 안 들어감` | pr-writer | pr-writer가 갱신할 때마다 다시 계산 |
 
-- 한 PR에는 둘 중 하나만 쓴다. 결정 부분이 있으면 Please check에는 쓰지 않는다.
+- 한 PR에는 둘 중 하나만 쓴다. 결정 부분이 있으면 Status에는 쓰지 않는다.
 - 결정 부분이 있는 PR은 순서만 쓴다. Draft라서 순서를 잘못 알아도 머지되지 않고, 아래 PR이 머지된 뒤의 base 변경과 Draft 해제는 decision-resolver가 한다. base를 바꾸는 쪽이 안내도 고쳐야 낡지 않아서, 결정 부분에 두고 decision-resolver가 고친다.
 - 일반 쌓인 PR은 할 일까지 쓴다. Draft가 아니라서 순서만 따르면 아래 브랜치로 들어간다. `#5`는 바로 아래 PR이다. pr-writer는 저장소에 base를 바꿔 주는 설정(브랜치 자동 삭제, Actions)이 있는지 모르므로 항상 쓴다.
 - base 변경 항목의 `<새 base>`는 머지된 PR이 머지된 브랜치(그 PR의 `baseRefName`)다. 그 브랜치도 머지된 PR의 작업 브랜치면 그 PR의 `baseRefName`으로 다시 따라간다. 머지된 PR의 작업 브랜치가 아닌 브랜치(기본 브랜치, 열린 PR의 작업 브랜치 등)가 나오면 멈춘다. 열린 PR의 작업 브랜치에서 멈췄으면 base를 바꾼 뒤에도 쌓인 PR이므로, 다음 갱신 때 머지 순서 항목으로 바뀐다.
@@ -137,3 +143,4 @@ pr-writer, decision-resolver가 읽는다. commit-writer는 읽지 않는다.
 
 - 결정 표시가 없음: decision-resolver가 처음 고칠 때 `> [!WARNING]`부터 `## Decisions needed`의 마지막 D 블록까지를 표시로 감싼다.
 - WARNING에 `> #<번호> 먼저 머지 필요.` 줄이 있음: decision-resolver가 처음 고칠 때 그 줄을 지우고, 필요하면 "머지 순서"대로 `머지 순서` 줄을 쓴다.
+- Status 섹션이 없고 Please check에 상태 항목(템플릿 항목, 뒤처짐, 머지 순서, base 변경)이 있음: pr-writer가 갱신할 때 Status로 옮긴다. 알아보는 법과 옮기는 법은 pr-writer의 "기존 보고서가 있을 때"를 따른다.
