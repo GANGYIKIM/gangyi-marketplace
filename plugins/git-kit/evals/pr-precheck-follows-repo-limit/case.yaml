@@ -1,5 +1,5 @@
 schema_version: "1.1"
-name: pr-precheck-skips-costly-check
+name: pr-precheck-follows-repo-limit
 tags: [fixture]
 context:
   scaffold_script: fixture.sh
