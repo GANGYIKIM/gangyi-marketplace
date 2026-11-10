@@ -38,6 +38,7 @@ python3 run.py --runs 3 -j 5                # 케이스마다 3회, 5개씩 동�
   - `github.txt`, `calls.txt`: 끝났을 때의 가짜 GitHub 상태와 받은 요청
   - `record.txt`: 끝났을 때의 결정 기록
   - `trace-<턴>.jsonl`: `claude -p`의 실행 기록
+- 몇 번 돌릴지와 채점 쓰는 법은 `evals/`와 같다. [.claude/rules/git-kit-testing.md](../../../.claude/rules/git-kit-testing.md)를 본다.
 
 ## 케이스 쓰는 법
 

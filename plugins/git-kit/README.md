@@ -48,14 +48,11 @@ protected-branches: [develop]  # main, master, 기본 브랜치 외에 보호할
 
 ## 테스트
 
-`evals/`에 [claude plugin eval](https://code.claude.com/docs/en/plugin-evals) 형식의 평가 케이스가 있습니다. 플러그인 폴더에서 실행합니다(사용량 차감).
+`evals/`에 [claude plugin eval](https://code.claude.com/docs/en/plugin-evals) 형식의 케이스가, `gh-evals/`에 GitHub이 필요한 흐름을 진짜 `gh`와 가짜 GitHub 서버로 돌리는 케이스가 있습니다.
 
 ```bash
-claude plugin eval . --scaffold --allow-tools Bash
+cd plugins/git-kit
+claude plugin eval . --scaffold --allow-tools Bash --ablation none
 ```
 
-- `--scaffold`: 케이스마다 테스트용 git 저장소를 만듭니다.
-- `--allow-tools Bash`: 커밋과 push에 필요합니다.
-- 한 케이스만 돌리려면 `--case <케이스 이름>`을 붙입니다. 스킬이 있을 때만 돌리려면 `--ablation none`을 붙입니다(비용 절반).
-- pr-writer 케이스는 가짜 원격 저장소로 push하고, gh 로그인이 없어 링크 안내로 끝납니다. 실제 PR 생성, 보고서 코멘트, Draft, 갱신은 테스트용 GitHub 저장소에서 직접 확인하세요.
-- pre-commit hook 실패 처리는 평가 환경이 hook을 끄고 실행해서 확인할 수 없습니다. 실제 저장소에서 직접 확인하세요.
+몇 번 돌릴지, 채점 쓰는 법, 실제 GitHub에서 확인할 때는 [.claude/rules/git-kit-testing.md](../../.claude/rules/git-kit-testing.md)에 있습니다. 이 저장소에서 git-kit 파일을 다룰 때 Claude Code가 자동으로 읽는 규칙입니다. gh-evals 쓰는 법은 [gh-evals/README.md](gh-evals/README.md)를 보세요.
