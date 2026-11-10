@@ -125,9 +125,30 @@ class World:
             "autoMergeRequest": None,
             "milestone": None,
             "labels": empty, "assignees": empty, "reviewRequests": empty, "projectCards": empty,
-            "projectItems": empty, "comments": empty, "reviews": empty, "latestReviews": empty,
+            "projectItems": empty, "reviews": empty, "latestReviews": empty,
             "commits": empty, "files": empty, "closingIssuesReferences": empty,
             "statusCheckRollup": empty, "participants": empty,
+            # REST의 PR 코멘트(issues/<번호>/comments)와 같은 코멘트를 GraphQL로도 돌려준다.
+            # `gh pr view --json comments`가 이 경로를 쓴다.
+            "comments": self.conn([self.comment(c) for c in self.s["comments"]
+                                   if c["issue"] == p["number"]]),
+        }
+
+    def comment(self, c):
+        return {
+            "__typename": "IssueComment",
+            "id": f"IC_{c['id']}",
+            "author": self.user(c.get("user", self.s.get("user", "eval"))),
+            "authorAssociation": c.get("author_association", "OWNER"),
+            "body": c["body"],
+            "createdAt": c.get("created_at", "2026-10-21T00:00:00Z"),
+            "updatedAt": c.get("updated_at", c.get("created_at", "2026-10-21T00:00:00Z")),
+            "url": f"https://github.com/{self.s['repo']}/pull/{c['issue']}#issuecomment-{c['id']}",
+            "includesCreatedEdit": False,
+            "isMinimized": False,
+            "minimizedReason": None,
+            "reactionGroups": [],
+            "viewerDidAuthor": c.get("user", self.s.get("user", "eval")) == self.s.get("user", "eval"),
         }
 
     def find(self, number):
