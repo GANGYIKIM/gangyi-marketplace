@@ -1,6 +1,4 @@
 ---
-type: llm
+type: regex
+pattern: '남긴 변경: [^\n]*About\.tsx'
 ---
-
-PASS if the final report, written in Korean, says src/pages/About.tsx was left uncommitted because it looks unrelated to the UserCard work.
-FAIL if About.tsx was committed, or the report does not mention it.
