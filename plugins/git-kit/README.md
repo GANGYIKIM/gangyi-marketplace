@@ -38,7 +38,7 @@ protected-branches: [develop]  # main, master, 기본 브랜치 외에 보호할
 ### pr-writer
 
 - GitHub에는 gh CLI → GitHub MCP 순서로 접근합니다. 둘 다 없으면 push한 뒤 PR 만들기 링크와 제목, 본문, 보고서 코멘트를 복사할 수 있게 보여줍니다. gh 설치와 로그인(`gh auth login`)이나 [GitHub MCP](https://github.com/github/github-mcp-server) 연결을 추천합니다.
-- PR 본문은 Summary와 Changes만 씁니다. 저장소에 PR 템플릿이 있으면 템플릿을 따릅니다.
+- PR 본문은 Summary와 Testing을 씁니다. 저장소에 PR 템플릿이 있으면 템플릿을 따릅니다.
 - 보고서는 `<!-- git-kit:report -->`로 시작하는 PR 첫 코멘트입니다. 다시 실행하면 새 코멘트를 달지 않고 이 코멘트를 고칩니다.
 - 결정 대기 브랜치의 PR은 제목이 🚧로 시작하고 항상 Draft로 만들어집니다. 보고서의 Decisions needed에서 선택지를 체크해 답합니다.
 - `--auto`로 만든 PR도 Draft입니다. Draft 해제는 사람이 합니다.
