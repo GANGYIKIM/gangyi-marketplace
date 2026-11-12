@@ -84,7 +84,7 @@ def render_github(state):
     for p in sorted(state["pulls"], key=lambda p: p["number"]):
         out += [f"## PR #{p['number']}", f"title: {p['title']}", f"state: {p.get('state', 'OPEN')}",
                 f"draft: {str(p.get('isDraft', False)).lower()}", f"base: {p['baseRefName']}",
-                f"head: {p['headRefName']}"]
+                f"head: {p['headRefName']}", "body:", p.get("body", "")]
     for c in state["comments"]:
         out += [f"## comment {c['id']} on #{c['issue']} by {c.get('user', 'eval')} "
                 f"({c.get('author_association', 'OWNER')})", c["body"]]

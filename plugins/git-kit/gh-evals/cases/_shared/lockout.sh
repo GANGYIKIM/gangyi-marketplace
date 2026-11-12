@@ -19,6 +19,24 @@ lockout_branch() {
   lockout_commit
 }
 
+# lockout_update_scenario: lockout_branch 뒤 기록(D1 대기, D2)을 쓰고, push 안 한 테스트 커밋을
+# 더하고, main을 한 커밋 앞서게 한다 (기존 PR을 갱신하는 pr-writer 케이스)
+lockout_update_scenario() {
+  lockout_branch
+  { record_head; d1_block 대기; d2_block; } | gk_record feat/account-lockout
+  gk_commit src/auth/lockout.test.ts "✅ test: cover lockout threshold" <<'TS'
+import { shouldLock } from "./lockout";
+if (shouldLock(4) || !shouldLock(5)) { throw new Error("threshold"); }
+TS
+  git switch -q main
+  gk_commit docs/security.md "📝 docs: add security policy note" <<'MD'
+# Security policy
+Lock accounts after repeated failed logins.
+MD
+  git push -q origin main
+  git switch -q feat/account-lockout
+}
+
 # lower_branch: main에서 feat/count-login-failures를 만들어 push (쌓인 PR의 아래 PR)
 lower_branch() {
   git switch -q -c feat/count-login-failures

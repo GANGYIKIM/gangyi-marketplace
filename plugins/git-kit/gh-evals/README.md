@@ -67,7 +67,7 @@ pattern: '## PR #1\ntitle: ✨ feat: '
 |---|---|
 | `last_message` | 마지막 턴의 응답 |
 | `messages` | 모든 턴의 응답 |
-| `github` | 가짜 GitHub 상태. PR마다 `title`, `state`, `draft`, `base`, `head` 줄, 코멘트마다 본문 |
+| `github` | 가짜 GitHub 상태. PR마다 `title`, `state`, `draft`, `base`, `head`, `body` 줄, 코멘트마다 본문 |
 | `calls` | 받은 요청. 한 줄에 `<메서드> <경로> <GraphQL 이름> <상태 코드>` |
 | `record` | 결정 기록. 없으면 `(no record)` |
 | `<target>@<턴>` | 그 턴이 끝난 직후의 상태. 예: `record@1`은 확인 질문에 답하기 전의 기록 |
