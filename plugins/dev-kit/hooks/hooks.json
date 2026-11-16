@@ -1,0 +1,16 @@
+{
+  "description": "확인 창이 뜰 자리에서 내용이 같은 쓰기를 거절하고 그 사실을 알린다. harness-builder가 권한 규칙을 확인하는 데 쓴다.",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/report-noop-write.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}
