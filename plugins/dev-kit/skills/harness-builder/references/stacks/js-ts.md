@@ -1,7 +1,7 @@
 ---
 name: js-ts
 kind: language
-when: package.json이 있음. 새 프로젝트는 고른 프레임워크가 JS·TS 것일 때
+when: package.json이 있음. 새 프로젝트는 고른 프레임워크가 JS·TS 것이거나 "없음"일 때
 verified: 2026-11-13 (공식 문서. 설치로는 확인 안 함)
 ---
 
@@ -13,6 +13,10 @@ verified: 2026-11-13 (공식 문서. 설치로는 확인 안 함)
 |---|---|---|
 | 패키지 매니저 | npm (Node와 함께 깔려 있어 따로 준비할 것이 없음) | 이 컴퓨터에 깔린 pnpm, yarn, bun |
 | 테스트 도구 | Vitest (설정이 적고 TypeScript를 바로 읽음) | Jest |
+
+## 뼈대
+
+프레임워크가 "없음"이면 `package.json`과 TypeScript 설정을 만든다.
 
 ## 조건
 
