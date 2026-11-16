@@ -20,6 +20,11 @@
       "name": "git-kit",
       "source": "./plugins/git-kit",
       "description": "AI가 규칙대로 작업하며 git에 읽기 좋은 기록을 남기고, 사람은 PR에서 검토하도록 돕는 git 스킬 모음"
+    },
+    {
+      "name": "dev-kit",
+      "source": "./plugins/dev-kit",
+      "description": "AI와 개발할 때 지킬 것을 문서가 아니라 검사(훅, 권한, 린트)로 지키게 하는 개발 스킬 모음"
     }
   ]
 }

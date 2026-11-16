@@ -9,6 +9,7 @@ claude plugin marketplace add GANGYIKIM/gangyi-marketplace
 claude plugin install note-kit@gangyi-marketplace
 claude plugin install clip-kit@gangyi-marketplace
 claude plugin install git-kit@gangyi-marketplace
+claude plugin install dev-kit@gangyi-marketplace
 ```
 
 ## 플러그인
@@ -18,3 +19,4 @@ claude plugin install git-kit@gangyi-marketplace
 | [note-kit](plugins/note-kit) | 아이디어, 초안, 요약 등 문서와 노트 작성을 돕는 스킬 모음 |
 | [clip-kit](plugins/clip-kit) | 웹 링크의 원문을 저장하고, 저장한 클립을 찾고 실패를 관리하는 스킬 모음 (Claude Code 전용) |
 | [git-kit](plugins/git-kit) | AI가 규칙대로 작업하며 git에 읽기 좋은 기록을 남기고, 사람은 PR에서 검토하도록 돕는 git 스킬 모음 |
+| [dev-kit](plugins/dev-kit) | AI와 개발할 때 지킬 것을 문서가 아니라 검사(훅, 권한, 린트)로 지키게 하는 개발 스킬 모음 (Claude Code 전용) |
