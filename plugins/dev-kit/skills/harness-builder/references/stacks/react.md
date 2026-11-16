@@ -3,7 +3,7 @@ name: react
 kind: library
 base: js-ts
 when: package.json의 의존성에 react가 있음. 새 프로젝트는 고른 프레임워크가 React를 쓸 때
-verified: 2026-11-13 (공식 문서. 설치로는 확인 안 함)
+verified: 2026-11-16 (Next.js 16과 Vite 8의 새 프로젝트에 설치. dependency-cruiser 17은 TypeScript 7을 읽지 못함)
 ---
 
 # React

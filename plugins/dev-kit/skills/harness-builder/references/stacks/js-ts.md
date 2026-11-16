@@ -2,7 +2,7 @@
 name: js-ts
 kind: language
 when: package.json이 있음. 새 프로젝트는 고른 프레임워크가 JS·TS 것이거나 "없음"일 때
-verified: 2026-11-13 (공식 문서. 설치로는 확인 안 함)
+verified: 2026-11-16 (프레임워크 없는 CLI, Next.js 16, Vite 8의 새 프로젝트에 설치)
 ---
 
 # JS·TS

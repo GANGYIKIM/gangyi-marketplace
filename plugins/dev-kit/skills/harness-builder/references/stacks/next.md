@@ -6,7 +6,7 @@ when: package.json의 의존성에 next가 있음
 for: 웹 앱
 recommended: true
 reason: 화면과 서버를 한 프로젝트에서 다룸
-verified: 2026-11-13 (Next.js 16 공식 문서. 설치로는 확인 안 함)
+verified: 2026-11-16 (create-next-app 16.4로 새 프로젝트에 설치)
 ---
 
 # Next.js
