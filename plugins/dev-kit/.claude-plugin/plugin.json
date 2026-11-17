@@ -1,0 +1,12 @@
+{
+  "name": "dev-kit",
+  "description": "AI와 개발할 때 지킬 것을 문서가 아니라 검사(훅, 권한, 린트)로 지키게 하는 개발 스킬 모음",
+  "author": {
+    "name": "GANGYIKIM",
+    "email": "gangyikim@gmail.com",
+    "url": "https://github.com/GANGYIKIM"
+  },
+  "homepage": "https://github.com/GANGYIKIM/gangyi-marketplace/tree/main/plugins/dev-kit",
+  "repository": "https://github.com/GANGYIKIM/gangyi-marketplace",
+  "keywords": ["dev", "harness", "setup", "korean"]
+}
